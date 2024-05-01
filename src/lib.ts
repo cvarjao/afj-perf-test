@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs'
-import axios, {isCancel, AxiosError} from 'axios';
+import axios, {isCancel, AxiosError, AxiosInstance} from 'axios';
 import path from 'path'
 import { PersonCredential1 } from './mocks';
 import querystring from 'querystring';
@@ -348,8 +348,10 @@ export const createAuthToken =  async (config: any, state: any) => {
     }
 }
 
-export const createInvitationToConnect = async (config:any, state:any) => {
-    return axios.post(`${config.base_url}/connections/create-invitation`,{
+export const createInvitationToConnect = async (ctx:Context, state:any) => {
+    const config = ctx.config
+    const http = ctx.axios
+    return http.post(`/connections/create-invitation`,{
         "my_label": `Faber\`s 😇 - ${new Date().getTime()}`,
         "image_url": "https://bc-wallet-demo-agent-admin.apps.silver.devops.gov.bc.ca/public/student/connection/best-bc-logo.png"
     }, {
@@ -404,8 +406,10 @@ export const waitForProofRequest = async (config: any, state: any) => {
     })
 }
 
-export const waitForConnectionReady = async (config: any, state: any) => {
-    await axios.get(`${config.base_url}/connections/${config.current_connection_id}`, {
+export const waitForConnectionReady = async (ctx: Context, state: any) => {
+    const config = ctx.config
+    const http = ctx.axios
+    await http.get(`/connections/${config.current_connection_id}`, {
         headers:{
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${config.auth_token}`
@@ -416,7 +420,7 @@ export const waitForConnectionReady = async (config: any, state: any) => {
         if (value.data.state !== 'active') {
             return new Promise ((resolve) => {
                 setTimeout(() => {
-                    resolve(waitForConnectionReady(config, state))
+                    resolve(waitForConnectionReady(ctx, state))
                 }, 2000);
             })
         }
@@ -476,23 +480,25 @@ export const waitForOfferAccepted = async (config: any, state: any, cred: IssueC
     })
 }
 
-export const sendPersonCredential = async (config: any, state: any, cred: IssueCredentialPreviewV1) => {
+export const sendPersonCredential = async (ctx: Context, state: any, cred: IssueCredentialPreviewV1) => {
     //const image =  await Jimp.read(path.join(__dirname, 'assets/photo.jpeg')).then((image)=> {return image.scale(1.5)}).then(image=>{return image.getBase64Async(image.getMIME())})
     //const photoValue = image
     //const photoValueSize = Buffer.byteLength(photoValue)
     //console.log(`photoValue:\n${photoValueSize} bytes / ${Math.round(photoValueSize /1024)} kb, ${photoValue.length} chars`)
     //console.log(`photoValue:\n${photoValue.substring(0, 100)}`)
-    
+    const config = ctx.config
+    const http = ctx.axios
+    console.log(`Preparing Credential Request`)
     const data = {
         "auto_issue": true,
         "auto_remove": false,
-        "connection_id": config.current_connection_id,
+        "connection_id": ctx.config.current_connection_id,
         "cred_def_id": config.current_credential_definition_id,
         "credential_preview": await cred.build(),
         "trace": true,
     }
     console.dir(data, {depth: 3, maxStringLength: 50})
-    await axios.post(`${config.base_url}/issue-credential/send-offer`,data, {
+    await http.post(`/issue-credential/send-offer`,data, {
         headers:{
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${config.auth_token}`
@@ -540,12 +546,21 @@ export const sendProofRequest = async (config: any, state: any, proofRequest: Pr
 }
 
 export class Context {
-    private config: any;
-    private state: any;
-
+    public config: any;
+    public state: any;
+    public axios: AxiosInstance;
     constructor(config:any){
         this.config = config
         this.state = config
+        this.axios = axios.create({baseURL: config.base_url})
+        this.axios.interceptors.request.use(function (config) {
+            console.log(`Requesting ${config.url}`)
+            return config;
+          }, function (error) {
+            // Do something with request error
+            return Promise.reject(error);
+        });
+        //this.config.axios = axios
     }
     acceptInvitationToConnect() {
         return acceptInvitationToConnect(this.config, this.state)
@@ -557,13 +572,13 @@ export class Context {
         return waitForOfferAccepted(this.config, this.state, cred)
     }
     sendCredential(cred: IssueCredentialPreviewV1) {
-        return sendPersonCredential(this.config, this.state, cred)
+        return sendPersonCredential(this, this.state, cred)
     }
     waitForConnectionReady() {
-        return waitForConnectionReady(this.config, this.state)
+        return waitForConnectionReady(this, this.state)
     }
     public async createInvitationToConnect() {
-        return createInvitationToConnect(this.config, this.state)
+        return createInvitationToConnect(this, this.state)
     }
     public async createAuthToken() {
         return createAuthToken(this.config, this.state)

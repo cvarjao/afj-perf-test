@@ -24,8 +24,13 @@ export class PersonCredential1 extends IssueCredentialPreviewV1 {
     }
     async build () {
         if (!this.getAttributes().find((element) => element.name === PersonAtributes.Picture)){
-            const image =  await Jimp.read(path.join(__dirname, 'assets/photo.jpeg')).then((image)=> {return image.scale(1.5)}).then(image=>{return image.getBase64Async(image.getMIME())})
+            const imagePath = path.join(__dirname, 'assets/photo.jpeg')
+            console.log(`Reading photo ${imagePath}`)
+            const image =  await Jimp.read(imagePath)
+            //.then((image)=> {return image.scale(1.5)})
+            .then(image=>{return image.getBase64Async(image.getMIME())})
             this.addAttribute({name: PersonAtributes.Picture, value: image})
+            console.log('Photo added')
         }
         return super.build()
     }

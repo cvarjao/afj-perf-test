@@ -13,5 +13,5 @@
     - `api_key`: Traction API Key
 ## Run Test
 ```
-yarn run ts-node src/index.ts 
+yarn run ts-node src/index.ts
 ```
