@@ -8,7 +8,7 @@ import { agentDependencies } from "@credo-ts/node";
 import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
 import { anoncreds } from "@hyperledger/anoncreds-nodejs";
 import { indyVdr } from "@hyperledger/indy-vdr-nodejs";
-import { CredentialDefinitionBuilder, SchemaBuilder } from "./lib";
+import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 
 
 const createLinkSecretIfRequired = async (agent: Agent) => {
@@ -113,6 +113,12 @@ export class AgentCredo implements AriesAgent {
         this.config = config
         this.ledgers = ledgers
         this.logger = logger
+    }
+    waitForPresentation(presentation_exchange_id: string): Promise<void> {
+      throw new Error("Method not implemented.");
+    }
+    sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+      throw new Error("Method not implemented.");
     }
     async acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
       await this.agent.credentials.acceptOffer({ credentialRecordId: offer.id })

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import { AriesAgent, ConnectionRef, CredentialOfferRef, Invitation } from "./Agent";
-import { CredentialDefinitionBuilder, IssueCredentialPreviewV1, SchemaBuilder } from "./lib";
+import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { PersonCredential1 } from "./mocks";
 
 
@@ -23,6 +23,27 @@ async function waitForConnectionReady (config: any, http: AxiosInstance, connect
     })
 }
 
+async function waitForProofRequest (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
+    //console.log(`/present-proof/records/${config.presentation_exchange_id}`)
+    await http.get(`${config.base_url}/present-proof/records/${presentation_exchange_id}`, {
+        headers:{
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.auth_token}`
+        }
+    })
+    //.then(printResponse)
+    .then((value)=>{
+        console.log(`proof request state: ${value.data.state} #${counter}`)
+        if (!(value.data.state === 'verified' || value.data.state === 'abandoned')) {
+            return new Promise ((resolve) => {
+                setTimeout(() => {
+                    resolve(waitForProofRequest(presentation_exchange_id, config, http, counter + 1))
+                }, 2000);
+            })
+        }
+    })
+}
+
 export class AgentTraction implements AriesAgent {
     public axios: AxiosInstance;
     private config: any
@@ -38,6 +59,136 @@ export class AgentTraction implements AriesAgent {
             return Promise.reject(error);
         });
         */
+    }
+    async clearAllRecords() {
+        let records: any[] | undefined = undefined
+
+        console.log(`Clearing Presentantion Exchage Records `)
+        while (records==undefined || records?.length > 0) {
+            records = await this.axios.get(`${this.config.base_url}/present-proof/records`, {
+                params: {},
+                headers:{
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.auth_token}`
+                }
+            })
+            .then(printResponse)
+            .then(extractResponseData)
+            .then((data:any) =>{return data.results})
+            if (records !== undefined && records.length > 0) {
+                for (const record of records) {
+                    await this.axios.delete(`${this.config.base_url}/present-proof/records/${record.presentation_exchange_id}`, {
+                        params: {},
+                        headers:{
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.config.auth_token}`
+                        }
+                    }).then(printResponse)
+                }
+            }
+        }
+
+        console.log(`Clearing Credential Issuance Records `)
+        records=undefined
+        while (records==undefined || records?.length > 0) {
+            records = await this.axios.get(`${this.config.base_url}/issue-credential/records`, {
+                params: {},
+                headers:{
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.auth_token}`
+                }
+            })
+            .then(extractResponseData)
+            .then((data:any) =>{return data.results})
+            if (records !== undefined && records?.length > 0) {
+                for (const record of records) {
+                    await this.axios.delete(`${this.config.base_url}/issue-credential/records/${record.credential_exchange_id}`, {
+                        params: {},
+                        headers:{
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.config.auth_token}`
+                        }
+                    }).then(printResponse)
+                }
+            }
+        }
+        console.log(`Clearing Connections`)
+        records=undefined
+        while (records==undefined || records?.length > 0) {
+            records = await this.axios.get(`${this.config.base_url}/connections`, {
+                params: {},
+                headers:{
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.auth_token}`
+                }
+            })
+            .then(printResponse)
+            .then(extractResponseData)
+            .then((data:any) =>{return data.results})
+            if (records !== undefined && records.length > 0) {
+                for (const record of records) {
+                    await this.axios.delete(`${this.config.base_url}/connections/${record.connection_id}`, {
+                        params: {},
+                        headers:{
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.config.auth_token}`
+                        }
+                    }).then(printResponse)
+                }
+            }
+        }
+    }
+    waitForPresentation(presentation_exchange_id: string): Promise<void> {
+        console.log(`Waiting for Presentation ...`)
+        return waitForProofRequest(presentation_exchange_id, this.config, this.axios, 0)
+    }
+    async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+        const proofRequest = builder.build()
+        const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        }).then(extractResponseData))
+        console.dir(['wallet', wallet])
+        const proof = await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
+            "auto_remove": true,
+            "auto_verify": true,
+            "comment": "string",
+            "trace": false,
+            proof_request: proofRequest
+        }, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then(extractResponseData)
+        const invitation = JSON.parse(JSON.stringify(proof.presentation_request_dict))
+        //this.config.presentation_exchange_id = proof.presentation_exchange_id
+        invitation['comment']= null
+        invitation['~service']= {
+            "recipientKeys": [wallet.result.verkey],
+            "routingKeys": null,
+            "serviceEndpoint": "https://traction-tenant-proxy-dev.apps.silver.devops.gov.bc.ca"
+        }
+        invitation['@type'] ='did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation'
+        return Promise.resolve(invitation).then(value => {
+            //console.log('invitation:')
+            //console.log(JSON.stringify(value, undefined, 2))
+            const baseUrl = 'didcomm://launch'
+            //const url = new URL(baseUrl)
+            //url.searchParams.append('d_m', Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
+            //this.config.current_invitation_url=url.toString() // does NOT work
+            //this.config.current_invitation_url=Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64') // does NOT work
+            const invitation_url = baseUrl+'?d_m='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64')) // does NOT work
+            //this.config.current_invitation_url=JSON.stringify(value) // works
+            
+            return {invitation: value, presentation_exchange_id: proof.presentation_exchange_id, invitation_url}
+        })
     }
     findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
         throw new Error("Method not implemented.");

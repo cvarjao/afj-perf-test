@@ -149,7 +149,7 @@ export class RequestAttributeBuilder {
         return this
     }
     setNonRevoked(value:number) {
-        this.nonRevoked = { to: value}
+        this.nonRevoked = { from: value, to: value}
         return this
     }
     addRestriction(retriction: any) {
@@ -513,7 +513,7 @@ export const sendPersonCredential = async (ctx: Context, state: any, cred: Issue
 }
 
 export const printResponse = (response: any) => {
-    console.log(`> ${response.request.path}`)
+    console.log(`> ${response.request.method} > ${response.request.path}`)
     console.dir(response.data)
     return response
 }

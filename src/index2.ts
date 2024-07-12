@@ -3,7 +3,7 @@ import * as ledgers from '../ledgers.json'
 import pino from 'pino'
 import * as lib from './lib'
 import { PersonCredential1, PersonSchema1 } from './mocks'
-import { CredentialDefinitionBuilder } from './lib'
+import { CredentialDefinitionBuilder, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch } from './lib'
 import { AgentTraction } from './AgentTraction'
 import { AgentCredo } from './AgentCredo'
 import { AriesAgent } from './Agent'
@@ -84,9 +84,11 @@ const run = async () => {
       await agentA.createSchemaCredDefinition(credDef)
       const issuer = agentA
       const holder: AriesAgent = agentB
+      await agentA.clearAllRecords()
   
       for (let step = 1; step <= steps; step++) {
         console.log(`Starting step ${step}/${steps} of cycle ${cycle}/${cycles}`)
+        /*
         const remoteInvitation = await agentA.createInvitationToConnect()
         const agentBConnectionRef = await holder.receiveInvitation(remoteInvitation)
         await issuer.waitForConnectionReady(remoteInvitation.connection_id)
@@ -97,6 +99,20 @@ const run = async () => {
         const offer = await holder.findCredentialOffer(agentBConnectionRef.connection_id)
         await holder.acceptCredentialOffer(offer)
         await issuer.waitForOfferAccepted(credential_exchange_id as string)
+        */
+        
+        const proofRequest = new ProofRequestBuilder()
+            .addRequestedAttribute("studentInfo",
+                new RequestAttributeBuilder()
+                    .setNames(["given_names", "family_name"])
+                    .addRestriction({"cred_def_id": credDef.getId()})
+                    .setNonRevoked(seconds_since_epoch(new Date()))
+            )
+        const remoteInvitation2 = await agentA.sendConnectionlessProofRequest(proofRequest)
+        console.dir(['remoteInvitation2', remoteInvitation2], {depth: 5})
+        const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
+        await agentA.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+        
       }
     }
     

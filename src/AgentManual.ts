@@ -3,7 +3,7 @@ import { Agent, ConnectionRecord, ConnectionsModule, CredentialExchangeRecord, C
 import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService, LegacyIndyCredentialFormatService, LegacyIndyProofFormatService, V1CredentialProtocol, V1ProofProtocol } from "@credo-ts/anoncreds";
 import { AskarModule } from "@credo-ts/askar";
 import { IndyVdrModule } from "@credo-ts/indy-vdr";
-import { CredentialDefinitionBuilder, SchemaBuilder } from "./lib";
+import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import QRCode from 'qrcode'
 import readline from 'readline';
 import fs from 'node:fs';
@@ -16,6 +16,12 @@ export class AgentManual implements AriesAgent {
         this.config = config
         this.logger = logger
     }
+  waitForPresentation(presentation_exchange_id: string): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<string | undefined> {
+    throw new Error("Method not implemented.");
+  }
     async acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
       console.warn('Accept Credential')
     }
@@ -34,7 +40,9 @@ export class AgentManual implements AriesAgent {
     async receiveInvitation(invitationRef: Invitation): Promise<ConnectionRef> {
       const relativePath = '/Library/Android/sdk/emulator/resources/custom.png'
       const QRCodePath = path.join(process.env.HOME as string, relativePath)
-      fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
+      fs.mkdirSync(path.dirname(QRCodePath), { recursive: true })
+      fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), invitationRef.invitation_url)
+      fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((invitationRef as any).invitation))
       return QRCode.toFile(
             QRCodePath,
             invitationRef.invitation_url,
