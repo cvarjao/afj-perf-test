@@ -88,6 +88,7 @@ const run = async () => {
   
       for (let step = 1; step <= steps; step++) {
         console.log(`Starting step ${step}/${steps} of cycle ${cycle}/${cycles}`)
+        
         /*
         const remoteInvitation = await agentA.createInvitationToConnect()
         const agentBConnectionRef = await holder.receiveInvitation(remoteInvitation)

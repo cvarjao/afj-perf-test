@@ -173,7 +173,7 @@ export class AgentTraction implements AriesAgent {
         invitation['~service']= {
             "recipientKeys": [wallet.result.verkey],
             "routingKeys": null,
-            "serviceEndpoint": "https://traction-tenant-proxy-dev.apps.silver.devops.gov.bc.ca"
+            "serviceEndpoint": "https://traction-acapy-dev.apps.silver.devops.gov.bc.ca"
         }
         invitation['@type'] ='did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation'
         return Promise.resolve(invitation).then(value => {
