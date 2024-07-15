@@ -1,6 +1,6 @@
 import { LogLevel, BaseLogger } from '@credo-ts/core'
-import * as ledgers from '../ledgers.json'
-import pino from 'pino'
+//import * as ledgers from '../ledgers.json'
+import pino, { Logger } from 'pino'
 import * as lib from './lib'
 import { PersonCredential1, PersonSchema1 } from './mocks'
 import { CredentialDefinitionBuilder, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch } from './lib'
@@ -8,6 +8,11 @@ import { AgentTraction } from './AgentTraction'
 import { AgentCredo } from './AgentCredo'
 import { AriesAgent } from './Agent'
 import { AgentManual } from './AgentManual'
+import fs from 'node:fs';
+import path from 'node:path';
+
+import ledgers from '../ledgers.json'
+import axios from 'axios'
 
 const pertTransport = pino.transport({
   targets: [
@@ -21,9 +26,8 @@ const pertTransport = pino.transport({
     }
   ],
 })
-const perf = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, base: {group: new Date().getTime()} }, pertTransport);
 
-const loggerTransport = pino.transport({
+export const loggerTransport = pino.transport({
   targets: [
     {
       level: 'trace',
@@ -38,30 +42,95 @@ const loggerTransport = pino.transport({
 
 const logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
 
-class PinoLogger extends BaseLogger {
+export class PinoLogger extends BaseLogger {
+  logger: Logger
+   constructor(logger:Logger, logLevel:LogLevel){
+    super(logLevel)
+    this.logger= logger
+   }
     test(message: string, data?: Record<string, any> | undefined): void {
-        logger.debug(data || {}, message)
+        this.logger.debug(data || {}, message)
     }
     trace(message: string, data?: Record<string, any> | undefined): void {
-        logger.trace(data || {}, message)
+        this.logger.trace(data || {}, message)
     }
     debug(message: string, data?: Record<string, any> | undefined): void {
-        logger.debug(data || {}, message, )
+        this.logger.debug(data || {}, message, )
     }
     info(message: string, data?: Record<string, any> | undefined): void {
-        logger.info(data || {}, message)
+        this.logger.info(data || {}, message)
     }
     warn(message: string, data?: Record<string, any> | undefined): void {
-        logger.warn(data || {}, message)
+        this.logger.warn(data || {}, message)
     }
     error(message: string, data?: Record<string, any> | undefined): void {
-        logger.error(data || {}, message)
+        this.logger.error(data || {}, message)
     }
     fatal(message: string, data?: Record<string, any> | undefined): void {
         //console.dir(data)
-        logger.fatal(data || {}, message)
+        this.logger.fatal(data || {}, message)
     }
     
+}
+
+export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, cred: PersonCredential1)  => {
+  const remoteInvitation = await issuer.createInvitationToConnect()
+  console.log(`waiting for holder to accept connection`)
+  const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+  console.log(`waiting for issuer to accept connection`)
+  await issuer.waitForConnectionReady(remoteInvitation.connection_id)
+  console.log(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+  console.dir(agentBConnectionRef1)
+  const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, remoteInvitation.connection_id)
+  const offer = await holder.findCredentialOffer(agentBConnectionRef1.connectionRecord?.connection_id as string)
+  await holder.acceptCredentialOffer(offer)
+  await issuer.waitForOfferAccepted(credential_exchange_id as string)
+}
+
+/**
+ * Connectionless (Connection/v1)
+ */
+const verifyCredentialA1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+  const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
+  const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
+  //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+  if (agentBConnectionRef2.invitationRequestsThreadIds){
+    for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+      await holder.acceptProof({id: proofId})
+    }
+  }
+  await verifier.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+}
+const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+  const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
+  const invitationFile = `${remoteInvitation2.invitation['@id']}.json`
+  fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation2.invitation, undefined, 2))
+  const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
+  const agentBConnectionRef2 = await holder.receiveInvitation({invitation_url: `${publicUrl}/${invitationFile}`, connection_id: ''})
+  //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+  if (agentBConnectionRef2.invitationRequestsThreadIds){
+    for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+      await holder.acceptProof({id: proofId})
+    }
+  }
+  await verifier.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+}
+/**
+ * Connectionless (OOB)
+ */
+const verifyCredentialB1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+  const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
+  console.dir(['remoteInvitation3', remoteInvitation3], {depth: 5})
+  console.log('Holder is receiving invitation')
+  const agentBConnectionRef3 =await holder.receiveInvitation(remoteInvitation3)
+  console.log('Holder is accepting proofs')
+  if (agentBConnectionRef3.invitationRequestsThreadIds){
+    for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
+      await holder.acceptProof({id: proofId})
+    }
+  }
+  console.log('Verifier is waiting for proofs')
+  await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
 }
 
 const run = async () => {
@@ -71,48 +140,40 @@ const run = async () => {
     for (let cycle = 1; cycle <= cycles; cycle++) {
       console.log(`Starting cycle ${cycle}/${cycles}`)
       const agentA = new AgentTraction(config)
-      //const agentB = new AgentCredo(config, ledgers, new PinoLogger(LogLevel.trace))
-      const agentB: AriesAgent = new AgentManual(config, new PinoLogger(LogLevel.trace))
+      const agentB = new AgentCredo(config, ledgers, new PinoLogger(logger, LogLevel.trace))
+      //const agentB: AriesAgent = new AgentManual(config, new PinoLogger(LogLevel.trace))
       await Promise.all([agentA.startup(), agentB.startup()])
 
 
-      const ctx = new lib.Context(config)
       const schema = new PersonSchema1()
       const credDef = new CredentialDefinitionBuilder().setSchema(schema).setSupportRevocation(true)
 
       await agentA.createSchema(schema)
       await agentA.createSchemaCredDefinition(credDef)
-      const issuer = agentA
-      const holder: AriesAgent = agentB
       await agentA.clearAllRecords()
-  
+      
+
       for (let step = 1; step <= steps; step++) {
         console.log(`Starting step ${step}/${steps} of cycle ${cycle}/${cycles}`)
-        
-        /*
-        const remoteInvitation = await agentA.createInvitationToConnect()
-        const agentBConnectionRef = await holder.receiveInvitation(remoteInvitation)
-        await issuer.waitForConnectionReady(remoteInvitation.connection_id)
-        console.log(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef.connection_id}`)
-        console.dir(agentBConnectionRef)
-        const personCred = new PersonCredential1()
-        const credential_exchange_id = await issuer.sendCredential(personCred, credDef.getId() as string, remoteInvitation.connection_id)
-        const offer = await holder.findCredentialOffer(agentBConnectionRef.connection_id)
-        await holder.acceptCredentialOffer(offer)
-        await issuer.waitForOfferAccepted(credential_exchange_id as string)
-        */
+        const personCred = new PersonCredential1(credDef)
         
         const proofRequest = new ProofRequestBuilder()
             .addRequestedAttribute("studentInfo",
                 new RequestAttributeBuilder()
                     .setNames(["given_names", "family_name"])
-                    .addRestriction({"cred_def_id": credDef.getId()})
+                    //.addRestriction({"cred_def_id": credDef.getId()})
+                    .addRestriction({"schema_name": schema.getName(),"schema_version": schema.getVersion(),"issuer_did": credDef.getId()?.split(':')[0]})
                     .setNonRevoked(seconds_since_epoch(new Date()))
-            )
-        const remoteInvitation2 = await agentA.sendConnectionlessProofRequest(proofRequest)
-        console.dir(['remoteInvitation2', remoteInvitation2], {depth: 5})
-        const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
-        await agentA.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+        )
+
+        await issueCredential(agentA, agentB, personCred)
+
+        // Connectionless Proof Request
+        //await verifyCredentialA1(agentA, agentB, proofRequest)
+        //await verifyCredentialA2(agentA, agentB, proofRequest)
+
+        // OOB Connectionless Proof Request
+        await verifyCredentialB1(agentA, agentB, proofRequest)
         
       }
     }

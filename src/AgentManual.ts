@@ -1,4 +1,4 @@
-import { AriesAgent, ConnectionRef, CredentialOfferRef, Invitation } from "./Agent";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
 import { Agent, ConnectionRecord, ConnectionsModule, CredentialExchangeRecord, CredentialsModule, Logger, MediationRecipientModule, ProofsModule, V2CredentialProtocol, V2ProofProtocol } from "@credo-ts/core";
 import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService, LegacyIndyCredentialFormatService, LegacyIndyProofFormatService, V1CredentialProtocol, V1ProofProtocol } from "@credo-ts/anoncreds";
 import { AskarModule } from "@credo-ts/askar";
@@ -16,6 +16,13 @@ export class AgentManual implements AriesAgent {
         this.config = config
         this.logger = logger
     }
+  sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+    throw new Error("Method not implemented.");
+  }
+  acceptProof(proof: AcceptProofArgs): Promise<void> {
+    //throw new Error("Method not implemented.");
+    return Promise.resolve()
+  }
   waitForPresentation(presentation_exchange_id: string): Promise<void> {
     throw new Error("Method not implemented.");
   }
@@ -37,20 +44,18 @@ export class AgentManual implements AriesAgent {
     createInvitationToConnect(): Promise<Invitation> {
         throw new Error("Method not implemented.");
     }
-    async receiveInvitation(invitationRef: Invitation): Promise<ConnectionRef> {
+    async receiveInvitation(invitationRef: Invitation): Promise<ReceiveInvitationResponse> {
       const relativePath = '/Library/Android/sdk/emulator/resources/custom.png'
       const QRCodePath = path.join(process.env.HOME as string, relativePath)
       fs.mkdirSync(path.dirname(QRCodePath), { recursive: true })
-      //fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), invitationRef.invitation_url)
-      //fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((invitationRef as any).invitation))
-      return QRCode.toFile(
+      fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), invitationRef.invitation_url)
+      fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((invitationRef as any)))
+      await QRCode.toFile(
             QRCodePath,
             invitationRef.invitation_url,
             {margin: 10}
-        ).then (()=>{
-            console.log(`QRCode saved to ~${relativePath}`)
-            return {connection_id: 'undefined'}
-        })
+      )
+      return {}
     }
     public async startup(){
     }

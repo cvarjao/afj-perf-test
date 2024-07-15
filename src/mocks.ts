@@ -1,6 +1,6 @@
 import path from 'path'
 import Jimp from "jimp";
-import { IssueCredentialPreviewV1, SchemaBuilder, toLocalISOString } from "./lib";
+import { CredentialDefinitionBuilder, IssueCredentialPreviewV1, SchemaBuilder, toLocalISOString } from "./lib";
 
 enum  PersonAtributes {
     GivenName="given_names",
@@ -16,8 +16,9 @@ export class PersonSchema1 extends SchemaBuilder {
 }
 
 export class PersonCredential1 extends IssueCredentialPreviewV1 {
-    constructor() {
+    constructor(cred_def: CredentialDefinitionBuilder) {
         super()
+        this.setCredDef(cred_def)
         this.addAttribute({name: PersonAtributes.GivenName, value: "John"})
         this.addAttribute({name: PersonAtributes.FamilyName, value: `Doe (${toLocalISOString(new Date())})`})
         //this.addAttribute({name: ".meta", value: JSON.stringify({some:"thing"})})

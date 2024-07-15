@@ -1,6 +1,6 @@
 import axios from "axios";
-import { AriesAgent, ConnectionRef, CredentialOfferRef, Invitation } from "./Agent";
-import { Agent, AutoAcceptCredential, AutoAcceptProof, ConnectionRecord, ConnectionsModule, CredentialExchangeRecord, CredentialsModule, HttpOutboundTransport, InitConfig, InjectionSymbols, LogLevel, Logger, MediationRecipientModule, MediatorPickupStrategy, ProofsModule, V2CredentialProtocol, V2ProofProtocol, WalletConfig, WsOutboundTransport } from "@credo-ts/core";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
+import { Agent, AutoAcceptCredential, AutoAcceptProof, ConnectionRecord, ConnectionsModule, CredentialExchangeRecord, CredentialsModule, HttpOutboundTransport, InitConfig, InjectionSymbols, LogLevel, Logger, MediationRecipientModule, MediatorPickupStrategy, OutOfBandState, ProofsModule, V2CredentialProtocol, V2ProofProtocol, WalletConfig, WsOutboundTransport } from "@credo-ts/core";
 import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService, LegacyIndyCredentialFormatService, LegacyIndyProofFormatService, V1CredentialProtocol, V1ProofProtocol } from "@credo-ts/anoncreds";
 import { AskarModule, AskarWallet } from "@credo-ts/askar";
 import { IndyVdrAnonCredsRegistry, IndyVdrModule, IndyVdrPoolService } from "@credo-ts/indy-vdr";
@@ -9,6 +9,10 @@ import { ariesAskar } from "@hyperledger/aries-askar-nodejs";
 import { anoncreds } from "@hyperledger/anoncreds-nodejs";
 import { indyVdr } from "@hyperledger/indy-vdr-nodejs";
 import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
+import { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
+import { OutOfBandRecord } from '@credo-ts/core'
+import fs from 'fs';
+import path from 'path';
 
 
 const createLinkSecretIfRequired = async (agent: Agent) => {
@@ -23,13 +27,15 @@ const createLinkSecretIfRequired = async (agent: Agent) => {
     }
   }
 
-const createAgent = async (config: any, ledgers: any, logger?: Logger) => {
+const createAgent = async (config: any, ledgers: IndyVdrPoolConfig[], logger?: Logger) => {
     const agentConfig: InitConfig = {
       label: 'afj-test',
       walletConfig: {
-          id: 'afj-wallet',
+          id: 'afj-wallet-2',
           key: 'testkey0000000000000000000000000',
       },
+      autoUpdateStorageOnStartup: true,
+      backupBeforeStorageUpdate: false,
       logger: logger
   }
   const indyCredentialFormat = new LegacyIndyCredentialFormatService()
@@ -49,7 +55,7 @@ const createAgent = async (config: any, ledgers: any, logger?: Logger) => {
           }),
           indyVdr: new IndyVdrModule({
               indyVdr,
-              networks: [...(ledgers as any).genesis.map((net: any) => { return { isProduction: false, indyNamespace: net.indyNamespace, genesisTransactions: net.genesisTransactions, connectOnStartup: true } })] as [any, ...any[]]
+              networks: ledgers as [IndyVdrPoolConfig]
           }),
           mediationRecipient: new MediationRecipientModule({
               mediatorInvitationUrl: config.mediatorInvitationUrl,
@@ -81,13 +87,28 @@ const createAgent = async (config: any, ledgers: any, logger?: Logger) => {
   
   //console.log(`Mediator URL:${config.mediatorInvitationUrl}`)
   const wallet = agent.dependencyManager.resolve(InjectionSymbols.Wallet) as AskarWallet
-  try{
-    await wallet.open(agentConfig.walletConfig as unknown as WalletConfig)
-    await wallet.delete()
-  } catch (ex){
-    console.error('Error opening wallet')
-    console.dir(ex)
+
+  console.dir(wallet)
+  try {
+    fs.rmSync(path.join(require('node:os').homedir(), '.afj'), {recursive: true, force: true})
+  } catch (error) {
+    console.log(error)
   }
+  try {
+    fs.rmSync(path.join(require('node:os').tmpdir(), '.afj'), {recursive: true, force: true})
+  } catch (error) {
+    console.log(error)
+  }
+  
+  try {
+    await wallet.createAndOpen(agentConfig.walletConfig as unknown as WalletConfig)
+    //await wallet.open(agentConfig.walletConfig as unknown as WalletConfig)
+    //await wallet.delete()
+  } catch (error) {
+    console.log('Error with createAndOpen')
+    console.dir(error)
+  }
+  
   const wsTransport = new WsOutboundTransport()
   const httpTransport = new HttpOutboundTransport()
 
@@ -100,9 +121,13 @@ const createAgent = async (config: any, ledgers: any, logger?: Logger) => {
   return agent
 }
 
+function delay(ms:number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export class AgentCredo implements AriesAgent {
     config: any;
-    ledgers: any;
+    ledgers: any[];
     logger: Logger;
     agent!: Agent<{
         // Register the Askar module on the agent
@@ -114,6 +139,9 @@ export class AgentCredo implements AriesAgent {
         this.ledgers = ledgers
         this.logger = logger
     }
+  sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+    throw new Error("Method not implemented.");
+  }
     waitForPresentation(presentation_exchange_id: string): Promise<void> {
       throw new Error("Method not implemented.");
     }
@@ -122,6 +150,22 @@ export class AgentCredo implements AriesAgent {
     }
     async acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
       await this.agent.credentials.acceptOffer({ credentialRecordId: offer.id })
+    }
+    async acceptProof(proof: AcceptProofArgs): Promise<void> {
+      while (true){
+        const proofs = await this.agent.proofs.getAll()
+        //console.log(`Proofs ${proofs.length}`)
+        for (let index = 0; index < proofs.length; index++) {
+          const p = proofs[index];
+          console.log(`[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${p.threadId}, arg:${proof.id}`)
+          console.dir(p.toJSON())
+          if (p.threadId === proof.id) {
+            await this.agent.proofs.acceptRequest({proofRecordId: p.id })
+            return
+          }
+        }
+        delay(1000)
+      }
     }
     async findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
       let cred!: CredentialExchangeRecord
@@ -139,20 +183,37 @@ export class AgentCredo implements AriesAgent {
     createInvitationToConnect(): Promise<Invitation> {
         throw new Error("Method not implemented.");
     }
-    async receiveInvitation(invitationRef: Invitation): Promise<ConnectionRef> {
+    async receiveInvitation(invitationRef: Invitation): Promise<ReceiveInvitationResponse> {
+      console.log(`Receiving invitation from ${invitationRef.invitation_url}`)
       const invitation = await this.agent?.oob.parseInvitation(invitationRef.invitation_url)
       if (!invitation) {
         throw new Error('Could not parse invitation from URL')
       }
-      await this.agent.oob.receiveInvitation(invitation)
-      let conn!: ConnectionRecord
-      while (conn === undefined) {
-        const items = await this.agent.connections.getAll()
-        conn = items.find((item) => item.theirLabel === invitation.label)!
+      const {outOfBandRecord, connectionRecord}: { outOfBandRecord: OutOfBandRecord; connectionRecord?: ConnectionRecord } = await this.agent.oob.receiveInvitation(invitation, {autoAcceptInvitation: true, autoAcceptConnection: true})
+      const invitationRequestsThreadIds = outOfBandRecord.getTags().invitationRequestsThreadIds
+      
+      console.log(`outOfBandRecord.state=${outOfBandRecord.state}`)
+      console.dir(outOfBandRecord.toJSON())
+      console.log(`invitationRequestsThreadIds=${invitationRequestsThreadIds}`)
+      /*
+      while (connectionRecord && !connectionRecord?.isReady === true) {
+        console.log(`connectionRecord.state=${connectionRecord.state}`)
+        await delay(100)
+        //no-op, waiting for connection to be ready
       }
-      return {connection_id: conn.id}
+        */
+      /*
+      while (outOfBandRecord && outOfBandRecord.state !== OutOfBandState.Done) {
+        //no-op, waiting for connection to be ready
+        console.log(`outOfBandRecord.state=${outOfBandRecord.state}`)
+      }
+      */
+      return {outOfBandRecord, invitationRequestsThreadIds, connectionRecord:{connection_id: connectionRecord?.id as string}}
     }
     public async startup(){
         this.agent = await createAgent(this.config, this.ledgers, this.logger)
+    }
+    public async shutdown(){
+      return this.agent.shutdown()
     }
 }

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { AriesAgent, ConnectionRef, CredentialOfferRef, Invitation } from "./Agent";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { PersonCredential1 } from "./mocks";
 
@@ -59,6 +59,9 @@ export class AgentTraction implements AriesAgent {
             return Promise.reject(error);
         });
         */
+    }
+    acceptProof(proof: AcceptProofArgs): Promise<void> {
+        throw new Error("Method not implemented.");
     }
     async clearAllRecords() {
         let records: any[] | undefined = undefined
@@ -142,6 +145,48 @@ export class AgentTraction implements AriesAgent {
         console.log(`Waiting for Presentation ...`)
         return waitForProofRequest(presentation_exchange_id, this.config, this.axios, 0)
     }
+    async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+        const proofRequest = builder.build()
+        const proof = await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
+            "auto_remove": true,
+            "auto_verify": true,
+            "comment": "string",
+            "trace": false,
+            proof_request: proofRequest
+        }, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then(extractResponseData)
+        const create_invitation_payload = {
+            "attachments": [
+                {
+                    "id": proof["presentation_exchange_id"],
+                    "type": "present-proof",
+                    //"data": {"json": proof},
+                }
+            ],
+            "label": "vc-authn-oidc",
+            "goal_code": "request-proof",
+            "use_public_did": false,
+            handshake_protocols:['https://didcomm.org/connections/1.0'],
+            //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
+        }
+        console.dir(['create_invitation_payload', create_invitation_payload], {depth: 5})
+        const invitation: any = (await this.axios.post(`${this.config.base_url}/out-of-band/create-invitation`, create_invitation_payload, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        }).then(extractResponseData))
+        console.dir(['OOB_invitation', invitation], {depth: 5})
+        return {...invitation, presentation_exchange_id:proof["presentation_exchange_id"]}
+    }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
         const proofRequest = builder.build()
         const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
@@ -151,7 +196,7 @@ export class AgentTraction implements AriesAgent {
                 'Authorization': `Bearer ${this.config.auth_token}`
             }
         }).then(extractResponseData))
-        console.dir(['wallet', wallet])
+        //console.dir(['wallet', wallet])
         const proof = await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
             "auto_remove": true,
             "auto_verify": true,
@@ -184,7 +229,7 @@ export class AgentTraction implements AriesAgent {
             //url.searchParams.append('d_m', Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
             //this.config.current_invitation_url=url.toString() // does NOT work
             //this.config.current_invitation_url=Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64') // does NOT work
-            const invitation_url = baseUrl+'?d_m='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64')) // does NOT work
+            const invitation_url = baseUrl+'?oob='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64')) // does NOT work
             //this.config.current_invitation_url=JSON.stringify(value) // works
             
             return {invitation: value, presentation_exchange_id: proof.presentation_exchange_id, invitation_url}
@@ -196,7 +241,7 @@ export class AgentTraction implements AriesAgent {
     acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    receiveInvitation(invitation: Invitation): Promise<ConnectionRef> {
+    receiveInvitation(invitation: Invitation): Promise<ReceiveInvitationResponse> {
         throw new Error("Method not implemented.");
     }
     async createSchemaCredDefinition(credDefBuilder: CredentialDefinitionBuilder): Promise<string | undefined> {

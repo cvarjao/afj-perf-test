@@ -173,6 +173,13 @@ export class IssueCredentialPreviewV1 {
     private _revoc_reg_id?: string
     private _credential_exchange_id?: string
     private _connection_id?: string
+    private _cred_def?: CredentialDefinitionBuilder;
+    setCredDef(cred_def: CredentialDefinitionBuilder) {
+        this._cred_def = cred_def
+    }
+    getCredDef() {
+        return this._cred_def
+    }
     setConnectionId(connection_id: any) {
         this._connection_id = connection_id
     }
