@@ -11,7 +11,11 @@
     - `base_url`: Traction API base URL
     - `tenant_id`: Traction tenant ID
     - `api_key`: Traction API Key
+## Start ngrok service
+```
+ngrok http "file://${PWD}/tmp"
+```
 ## Run Test
 ```
-yarn run ts-node src/index.ts
+yarn run ts-node src/index2.ts
 ```

@@ -167,13 +167,13 @@ export class AgentTraction implements AriesAgent {
                 {
                     "id": proof["presentation_exchange_id"],
                     "type": "present-proof",
-                    //"data": {"json": proof},
+                    "data": {"json": proof},
                 }
             ],
             "label": "vc-authn-oidc",
             "goal_code": "request-proof",
             "use_public_did": false,
-            handshake_protocols:['https://didcomm.org/connections/1.0'],
+            //handshake_protocols:['https://didcomm.org/connections/1.0'],
             //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
         }
         console.dir(['create_invitation_payload', create_invitation_payload], {depth: 5})
@@ -218,7 +218,7 @@ export class AgentTraction implements AriesAgent {
         invitation['~service']= {
             "recipientKeys": [wallet.result.verkey],
             "routingKeys": null,
-            "serviceEndpoint": "https://traction-acapy-dev.apps.silver.devops.gov.bc.ca"
+            "serviceEndpoint":  this.config.serviceEndpoint
         }
         invitation['@type'] ='did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation'
         return Promise.resolve(invitation).then(value => {

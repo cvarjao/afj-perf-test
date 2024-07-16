@@ -1,9 +1,13 @@
 import { readFileSync } from 'fs'
 import axios, {isCancel, AxiosError, AxiosInstance} from 'axios';
-import path from 'path'
 import { PersonCredential1 } from './mocks';
 import querystring from 'querystring';
-
+import { BaseLogger, LogLevel } from '@credo-ts/core';
+import { Logger } from 'pino';
+import { AgentTraction } from './AgentTraction';
+import { AriesAgent } from './Agent';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export const toLocalISOString = (date:Date) =>{
     const tzoffset = (new Date()).getTimezoneOffset() // offset in minutes
@@ -12,11 +16,41 @@ export const toLocalISOString = (date:Date) =>{
     return (new Date(date.getTime() - tzoffsetInMilliseconds)).toISOString().slice(0, -1) + '-' + new String(tzoffsetInHours).padStart(2, '0')
 }
 
-
 export const seconds_since_epoch = (date:Date) =>{
     return Math.floor( date.getTime() / 1000 )
 }
 
+export class PinoLogger extends BaseLogger {
+    logger: Logger
+     constructor(logger:Logger, logLevel:LogLevel){
+      super(logLevel)
+      this.logger= logger
+     }
+      test(message: string, data?: Record<string, any> | undefined): void {
+          this.logger.debug(data || {}, message)
+      }
+      trace(message: string, data?: Record<string, any> | undefined): void {
+          this.logger.trace(data || {}, message)
+      }
+      debug(message: string, data?: Record<string, any> | undefined): void {
+          this.logger.debug(data || {}, message, )
+      }
+      info(message: string, data?: Record<string, any> | undefined): void {
+          this.logger.info(data || {}, message)
+      }
+      warn(message: string, data?: Record<string, any> | undefined): void {
+          this.logger.warn(data || {}, message)
+      }
+      error(message: string, data?: Record<string, any> | undefined): void {
+          this.logger.error(data || {}, message)
+      }
+      fatal(message: string, data?: Record<string, any> | undefined): void {
+          //console.dir(data)
+          this.logger.fatal(data || {}, message)
+      }
+      
+  }
+  
 const sanitize = (obj: any) => {
     Object.keys(obj).forEach(key => {
         if (obj[key] === undefined) {
@@ -132,6 +166,7 @@ export class CredentialDefinitionBuilder {
         return sanitize({
             "schema_id": this.schema_id??this._schema?.getSchemaId(),
             "support_revocation": this.support_revocation,
+            "revocation_registry_size": 100,
             "tag": this.getTag()
         })
     }
@@ -740,3 +775,88 @@ export class Context {
         return this.config.current_invitation_url
     }
 }
+
+export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, cred: PersonCredential1)  => {
+    const remoteInvitation = await issuer.createInvitationToConnect()
+    console.log(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    console.log(`waiting for issuer to accept connection`)
+    await issuer.waitForConnectionReady(remoteInvitation.connection_id)
+    console.log(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    console.dir(agentBConnectionRef1)
+    const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, remoteInvitation.connection_id)
+    const offer = await holder.findCredentialOffer(agentBConnectionRef1.connectionRecord?.connection_id as string)
+    await holder.acceptCredentialOffer(offer)
+    await issuer.waitForOfferAccepted(credential_exchange_id as string)
+}
+
+/**
+ * Connectionless (Connection/v1)
+ */
+export const verifyCredentialA1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
+    const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
+    //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+    if (agentBConnectionRef2.invitationRequestsThreadIds){
+      for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+        await holder.acceptProof({id: proofId})
+      }
+    }
+    await verifier.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+  }
+/**
+ * Connectionless (Connection/v1) with http request
+ */
+export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
+    const invitationFile = `${remoteInvitation2.invitation['@id']}.json`
+    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation2.invitation, undefined, 2))
+    const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
+    const agentBConnectionRef2 = await holder.receiveInvitation({invitation_url: `${publicUrl}/${invitationFile}`, connection_id: ''})
+    //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+    if (agentBConnectionRef2.invitationRequestsThreadIds){
+      for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+        await holder.acceptProof({id: proofId})
+      }
+    }
+    await verifier.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+  }
+
+  /**
+   * Connectionless (OOB) with encoded payload
+   */
+  export const verifyCredentialB1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
+    console.dir(['remoteInvitation3', remoteInvitation3], {depth: 5})
+    console.log('Holder is receiving invitation')
+    const agentBConnectionRef3 =await holder.receiveInvitation(remoteInvitation3)
+    console.log('Holder is accepting proofs')
+    if (agentBConnectionRef3.invitationRequestsThreadIds){
+      for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
+        await holder.acceptProof({id: proofId})
+      }
+    }
+    console.log('Verifier is waiting for proofs')
+    await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
+  }
+  
+  /**
+   * Connectionless (OOB) with URL
+   */
+  export const verifyCredentialB2 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
+    console.dir(['remoteInvitation3', remoteInvitation3], {depth: 5})
+    const invitationFile = `${remoteInvitation3.invitation['@id']}.json`
+    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.invitation, undefined, 2))
+    const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
+    console.log('Holder is receiving invitation')
+    const agentBConnectionRef3 =await holder.receiveInvitation({invitation_url: `${publicUrl}/${invitationFile}`, connection_id: ''})
+    console.log('Holder is accepting proofs')
+    if (agentBConnectionRef3.invitationRequestsThreadIds){
+      for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
+        await holder.acceptProof({id: proofId})
+      }
+    }
+    console.log('Verifier is waiting for proofs')
+    await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
+  }
