@@ -10,7 +10,7 @@ import { log, error } from "console";
 import pino from "pino";
 
 const stepTimeout = 999999999
-const shortTimeout = 60*1000 //60s
+const shortTimeout = (2*60)*1000
 
 export const loggerTransport = pino.transport({
   targets: [
@@ -61,7 +61,7 @@ describe("Connectionless", () => {
 
     await issueCredential(agentA, agentB, personCred)
   }, stepTimeout)
-  test("connection/v1/A1", async () => {
+  test.only("connection/v1/A1", async () => {
     log('connection/v1/A1')
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -85,8 +85,8 @@ describe("Connectionless", () => {
     )
     await verifyCredentialA2(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test("connection/v1/B1", async () => {
-    log("connection/v1/B1")
+  test("connection/OOB/B1", async () => {
+    log("connection/OOB/B1")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
             new RequestAttributeBuilder()
@@ -97,8 +97,8 @@ describe("Connectionless", () => {
     )
     await verifyCredentialB1(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test.only("connection/v1/B2", async () => {
-    log("connection/v1/B2")
+  test("connection/OOB/B2", async () => {
+    log("connection/OOB/B2")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
             new RequestAttributeBuilder()

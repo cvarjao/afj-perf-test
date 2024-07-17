@@ -828,15 +828,16 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
   export const verifyCredentialB1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
     const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
     console.dir(['remoteInvitation3', remoteInvitation3], {depth: 5})
-    console.log('Holder is receiving invitation')
+    console.log(`Holder is receiving invitation for ${remoteInvitation3.presentation_exchange_id}`)
     const agentBConnectionRef3 =await holder.receiveInvitation(remoteInvitation3)
     console.log('Holder is accepting proofs')
+    //await waitFor(10000)
     if (agentBConnectionRef3.invitationRequestsThreadIds){
       for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
         await holder.acceptProof({id: proofId})
       }
     }
-    console.log('Verifier is waiting for proofs')
+    console.log(`Verifier is waiting for proofs: ${remoteInvitation3.presentation_exchange_id}`)
     await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
   }
   
