@@ -59,4 +59,5 @@ export class AgentManual implements AriesAgent {
     }
     public async startup(){
     }
+    public async shutdown() {}
 }

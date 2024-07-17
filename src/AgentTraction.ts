@@ -60,6 +60,10 @@ export class AgentTraction implements AriesAgent {
         });
         */
     }
+    shutdown(): Promise<void> {
+        //throw new Error("Method not implemented.");
+        return Promise.resolve()
+    }
     acceptProof(proof: AcceptProofArgs): Promise<void> {
         throw new Error("Method not implemented.");
     }
@@ -185,6 +189,7 @@ export class AgentTraction implements AriesAgent {
             }
         }).then(extractResponseData))
         console.dir(['OOB_invitation', invitation], {depth: 5})
+        delete invitation.invitation.handshake_protocols
         return {...invitation, presentation_exchange_id:proof["presentation_exchange_id"]}
     }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {

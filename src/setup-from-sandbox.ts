@@ -43,7 +43,7 @@ const run = async () => {
   }
   config['_new'] = config['default2']??{}
   config['_new']['base_url'] = baseUrl
-  config['_new']['serviceEndpoint'] = baseUrl.replace('-proxy', '-acapy')
+  config['_new']['serviceEndpoint'] = baseUrl.replace('-tenant-proxy', '-acapy')
   config['_new']['tenant_id'] = tenant.tenant_id
   config['_new']['api_key'] = tenant.api_key
   config['_new']['wallet_id'] = checkin.wallet_id

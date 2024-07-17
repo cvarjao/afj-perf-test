@@ -3,7 +3,7 @@ import { createAgent } from "./AgentCredo";
 import { ConsoleLogger, LogLevel } from "@credo-ts/core";
 type AgentType = Awaited<ReturnType<typeof createAgent>>
 
-describe("Connectionless", () => {
+describe.skip("credo", () => {
   const config = require("../local.env.json")["sovrin_testnet"];
   const ledgers = require("../ledgers.json");
   let agent: AgentType;

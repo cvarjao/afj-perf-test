@@ -11,6 +11,7 @@ export interface AriesAgent {
     createInvitationToConnect(): Promise<Invitation>
     receiveInvitation(invitation: Invitation): Promise<ReceiveInvitationResponse>;
     startup(): Promise<void>;
+    shutdown(): Promise<void>;
     createSchema( builder: SchemaBuilder) : Promise<string |  undefined>
     createSchemaCredDefinition(credDefBuilder: CredentialDefinitionBuilder):  Promise<string |  undefined>
     findCredentialOffer(connectionId: string): Promise<CredentialOfferRef>

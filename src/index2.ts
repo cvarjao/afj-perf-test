@@ -52,8 +52,8 @@ const run = async () => {
     for (let cycle = 1; cycle <= cycles; cycle++) {
       console.log(`Starting cycle ${cycle}/${cycles}`)
       const agentA = new AgentTraction(config)
-      const agentB = new AgentCredo(config, ledgers, new PinoLogger(logger, LogLevel.trace))
-      //const agentB: AriesAgent = new AgentManual(config, new PinoLogger(logger, LogLevel.trace))
+      //const agentB = new AgentCredo(config, ledgers, new PinoLogger(logger, LogLevel.trace))
+      const agentB: AriesAgent = new AgentManual(config, new PinoLogger(logger, LogLevel.trace))
       await Promise.all([agentA.startup(), agentB.startup()])
 
 
