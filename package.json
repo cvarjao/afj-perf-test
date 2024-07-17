@@ -11,6 +11,7 @@
     "@hyperledger/indy-vdr-nodejs": "0.2.2",
     "axios": "^1.7.2",
     "jimp": "^0.22.12",
+    "node-gyp": "^10.2.0",
     "pino": "^8.21.0",
     "qrcode": "^1.5.3"
   },
@@ -30,5 +31,6 @@
     "ts-jest": "^29.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.3"
-  }
+  },
+  "version": "0.0.0"
 }
