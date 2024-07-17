@@ -556,7 +556,7 @@ export const sendPersonCredential = async (ctx: Context, state: any, cred: Issue
 
 export const printResponse = (response: any) => {
     console.log(`> ${response.request.method} > ${response.request.path}`)
-    console.dir(response.data)
+    console.dir(response.data,{depth: 6})
     return response
 }
 

@@ -61,7 +61,7 @@ describe("Connectionless", () => {
 
     await issueCredential(agentA, agentB, personCred)
   }, stepTimeout)
-  test.only("connection/v1/A1", async () => {
+  test("connection/v1/A1", async () => {
     log('connection/v1/A1')
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",

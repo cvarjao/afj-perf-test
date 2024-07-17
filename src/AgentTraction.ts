@@ -261,6 +261,7 @@ export class AgentTraction implements AriesAgent {
                 'Authorization': `Bearer ${config.auth_token}`
             }
         })
+        .then(printResponse)
         const credential_definitions:any[] = []
         if (schemas.data.credential_definition_ids.length > 0) {
             const credential_definition_ids:string[] = schemas.data.credential_definition_ids
@@ -280,6 +281,13 @@ export class AgentTraction implements AriesAgent {
             }
         }
         if (credential_definitions.length === 0){
+            await http.get(`${config.base_url}/transactions`, {
+                headers:{
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${config.auth_token}`
+                }
+            })
+            .then(printResponse)
             console.log('Creating Credential Definition ...')
             return await axios.post(`${config.base_url}/credential-definitions`,credDefBuilder.build(), {
                 headers:{
@@ -287,6 +295,7 @@ export class AgentTraction implements AriesAgent {
                     'Authorization': `Bearer ${config.auth_token}`
                 }
             })
+            .then(printResponse)
             .then((value)=>{
                 console.log('Created CredDef')
                 console.dir(value.data, {depth: 5, maxStringLength: 50})
