@@ -175,7 +175,8 @@ export class AgentTraction implements AriesAgent {
                 }
             ],
             "label": "vc-authn-oidc",
-            "goal_code": "request-proof",
+            //"goal": "request-proof",
+            //"goal_code": "request-proof",
             "use_public_did": false,
             //handshake_protocols:['https://didcomm.org/connections/1.0'],
             //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
@@ -190,6 +191,7 @@ export class AgentTraction implements AriesAgent {
         }).then(extractResponseData))
         console.dir(['OOB_invitation', invitation], {depth: 5})
         delete invitation.invitation.handshake_protocols
+        invitation.invitation_url = 'didcom://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
         return {...invitation, presentation_exchange_id:proof["presentation_exchange_id"]}
     }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
