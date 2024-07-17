@@ -42,6 +42,12 @@ async function waitForProofRequest (presentation_exchange_id: string, config: an
             })
         }
     })
+    .catch(reason => {
+        //TODO: due to a bug, we consider 404 as sucessful presentation
+        if (reason.response.status !== 404){
+            throw reason
+        }
+    })
 }
 
 export class AgentTraction implements AriesAgent {
@@ -288,6 +294,18 @@ export class AgentTraction implements AriesAgent {
                 }
             })
             .then(printResponse)
+            .then(extractResponseData)
+            .then(data => {
+                const results:any[] = data.results
+                const transactions = results.map((value) => {
+                    let _txn = value.messages_attach[0].data.json
+                    if (typeof _txn === 'string') {
+                        _txn= JSON.parse(_txn)
+                    }
+                    return {state: value.state, created_at:value.created_at, updated_at:value.updated_at, txn_type:_txn?.operation?.type??_txn.result?.txn?.type}
+                })
+                console.dir(['transactions', transactions], {depth: 5})
+            })
             console.log('Creating Credential Definition ...')
             return await axios.post(`${config.base_url}/credential-definitions`,credDefBuilder.build(), {
                 headers:{

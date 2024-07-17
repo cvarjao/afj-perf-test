@@ -1,12 +1,35 @@
 import axios from 'axios'
 import fs from 'node:fs'
 import path from 'node:path'
-import { waitFor } from './lib';
+import { extractResponseData, printResponse, waitFor } from './lib';
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const checkTransactions = async (baseUrl:string, token:string) => {
+  const transactions = await axios.get(`${baseUrl}/transactions`, {
+      headers:{
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+      }
+  })
+  //.then(printResponse)
+  .then(extractResponseData)
+  .then(data => {
+      const results:any[] = data.results
+      const transactions = results.map((value) => {
+          let _txn = value.messages_attach[0].data.json
+          if (typeof _txn === 'string') {
+              _txn= JSON.parse(_txn)
+          }
+          return {state: value.state, created_at:value.created_at, updated_at:value.updated_at, txn_type:_txn?.operation?.type??_txn.result?.txn?.type}
+      })
+      return transactions
+  })
+  console.dir(['transactions', transactions], {depth: 5})
+  return transactions
+}
 const run = async () => {
   console.log('Requesting tenant')
   const baseUrl = 'https://traction-sandbox-tenant-proxy.apps.silver.devops.gov.bc.ca'
@@ -39,10 +62,13 @@ const run = async () => {
   //{tenant_authentication_api_id, api_key}
   console.dir(['requestApiKey', requestApiKey])
 
+  /*
   await axios.put(`${baseUrl}/ledger/bcovrin-test/set-write-ledger`,
     {}
   , {headers: {"Authorization": `Bearer ${checkin.token}`}})
   .then((response) => {return response.data})
+  */
+  await checkTransactions(baseUrl,checkin.token )
 
   console.log('Connecting to Endorser')
   const endorserConn = await axios.post(`${baseUrl}/tenant/endorser-connection`,
@@ -59,6 +85,7 @@ const run = async () => {
      waitFor(2000)
   }
 
+  await checkTransactions(baseUrl,checkin.token )
   console.log('Creating DID')
   const walletDid = await axios.post(`${baseUrl}/wallet/did/create`,
     {"method":"sov","options":{"key_type":"ed25519"}}
@@ -86,7 +113,7 @@ const run = async () => {
     .then((response) => {return response.data})
      waitFor(2000)
   }
-
+  await checkTransactions(baseUrl,checkin.token )
   console.log('Set as public DID')
   await axios.post(`${baseUrl}/wallet/did/public`,
   {}
@@ -100,6 +127,18 @@ const run = async () => {
     {"ledger_id":"bcovrin-test"}
     , {headers: {"Authorization": `Bearer ${checkin.token}`}})
   .then((response) => {return response.data})
+
+  let transactions: any[]
+  const allTransacionsAcked = (transactions:any[]) => {
+    //transactions.filter()
+  }
+  let maxTransactionsChecks = 40
+  while (maxTransactionsChecks>0) {
+    transactions = await checkTransactions(baseUrl,checkin.token )
+    waitFor(2000)
+    maxTransactionsChecks--
+  }
+
   const config:any = {}
   if (fs.existsSync(path.resolve('./local.env.json'))){
      Object.assign(config, JSON.parse(fs.readFileSync(path.resolve('./local.env.json'), 'utf8')))

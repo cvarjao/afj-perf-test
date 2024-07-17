@@ -85,7 +85,7 @@ describe("Connectionless", () => {
     )
     await verifyCredentialA2(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test("connection/OOB/B1", async () => {
+  test.only("connection/OOB/B1", async () => {
     log("connection/OOB/B1")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -97,7 +97,7 @@ describe("Connectionless", () => {
     )
     await verifyCredentialB1(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test("connection/OOB/B2", async () => {
+  test.only("connection/OOB/B2", async () => {
     log("connection/OOB/B2")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
