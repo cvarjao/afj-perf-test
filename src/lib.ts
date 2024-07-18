@@ -777,13 +777,14 @@ export class Context {
 }
 
 export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, cred: PersonCredential1)  => {
+    const { logger } = issuer
     const remoteInvitation = await issuer.createInvitationToConnect()
-    console.log(`waiting for holder to accept connection`)
+    logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
-    console.log(`waiting for issuer to accept connection`)
+    logger.info(`waiting for issuer to accept connection`)
     await issuer.waitForConnectionReady(remoteInvitation.connection_id)
-    console.log(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
-    console.dir(agentBConnectionRef1)
+    logger.info(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
     const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, remoteInvitation.connection_id)
     const offer = await holder.findCredentialOffer(agentBConnectionRef1.connectionRecord?.connection_id as string)
     await holder.acceptCredentialOffer(offer)
@@ -826,18 +827,19 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
    * Connectionless (OOB) with encoded payload
    */
   export const verifyCredentialB1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const { logger } = verifier
     const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
-    console.dir(['remoteInvitation3', remoteInvitation3], {depth: 5})
-    console.log(`Holder is receiving invitation for ${remoteInvitation3.presentation_exchange_id}`)
+    logger.info('remoteInvitation3', remoteInvitation3)
+    logger.info(`Holder is receiving invitation for ${remoteInvitation3.presentation_exchange_id}`)
     const agentBConnectionRef3 =await holder.receiveInvitation(remoteInvitation3)
-    console.log('Holder is accepting proofs')
+    logger.info('Holder is accepting proofs')
     //await waitFor(10000)
     if (agentBConnectionRef3.invitationRequestsThreadIds){
       for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
         await holder.acceptProof({id: proofId})
       }
     }
-    console.log(`Verifier is waiting for proofs: ${remoteInvitation3.presentation_exchange_id}`)
+    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.presentation_exchange_id}`)
     await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
   }
   
@@ -845,19 +847,20 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
    * Connectionless (OOB) with URL
    */
   export const verifyCredentialB2 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const { logger } = verifier
     const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
-    console.dir(['remoteInvitation3', remoteInvitation3], {depth: 5})
+    logger.info('remoteInvitation3', remoteInvitation3)
     const invitationFile = `${remoteInvitation3.invitation['@id']}.json`
     fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.invitation, undefined, 2))
     const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
-    console.log('Holder is receiving invitation')
+    logger.info('Holder is receiving invitation')
     const agentBConnectionRef3 =await holder.receiveInvitation({invitation_url: `${publicUrl}/${invitationFile}`, connection_id: ''})
-    console.log('Holder is accepting proofs')
+    logger.info('Holder is accepting proofs')
     if (agentBConnectionRef3.invitationRequestsThreadIds){
       for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
         await holder.acceptProof({id: proofId})
       }
     }
-    console.log('Verifier is waiting for proofs')
+    logger.info('Verifier is waiting for proofs')
     await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
   }
