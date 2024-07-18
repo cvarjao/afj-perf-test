@@ -1,8 +1,6 @@
-import axios from "axios";
 import {
   AcceptProofArgs,
   AriesAgent,
-  ConnectionRef,
   CredentialOfferRef,
   Invitation,
   ReceiveInvitationResponse,
@@ -17,16 +15,12 @@ import {
   CredentialsModule,
   HttpOutboundTransport,
   InitConfig,
-  InjectionSymbols,
-  LogLevel,
   Logger,
   MediationRecipientModule,
   MediatorPickupStrategy,
-  OutOfBandState,
   ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
-  WalletConfig,
   WsOutboundTransport,
 } from "@credo-ts/core";
 import {
@@ -38,7 +32,7 @@ import {
   V1CredentialProtocol,
   V1ProofProtocol,
 } from "@credo-ts/anoncreds";
-import { AskarModule, AskarWallet } from "@credo-ts/askar";
+import { AskarModule } from "@credo-ts/askar";
 import {
   IndyVdrAnonCredsRegistry,
   IndyVdrModule,
@@ -191,7 +185,7 @@ function delay(ms: number) {
 export class AgentCredo implements AriesAgent {
   config: any;
   ledgers: any[];
-  logger: Logger;
+  public readonly logger: Logger;
   agent!: Agent<{
     // Register the Askar module on the agent
     // We do this to have access to a wallet

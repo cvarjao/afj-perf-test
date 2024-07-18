@@ -1,83 +1,19 @@
 import axios, { AxiosInstance } from "axios";
-import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
+import { AcceptProofArgs, AriesAgent, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
-import { PersonCredential1 } from "./mocks";
-
-
-async function waitForLedgerTransactionAcked (config: any, http: AxiosInstance, txn_id:string, counter: number) {
-    await http.get(`/transactions/${txn_id}`, {
-        headers:{
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${config.auth_token}`
-        }
-    })
-    .then((value)=>{
-        console.log(`transaction ${txn_id} state: ${value.data.state}`)
-        if (value.data.state !== 'transaction_acked') {
-            return new Promise ((resolve) => {
-                setTimeout(() => {
-                    resolve(waitForLedgerTransactionAcked(config, http, txn_id, counter + 1))
-                }, 2000);
-            })
-        }
-    })
-}
-
-async function waitForConnectionReady (config: any, http: AxiosInstance, connection_id:string, counter: number) {
-    await http.get(`/connections/${connection_id}`, {
-        headers:{
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${config.auth_token}`
-        }
-    })
-    .then((value)=>{
-        console.log(`connection state: ${value.data.state}`)
-        if (value.data.state !== 'active') {
-            return new Promise ((resolve) => {
-                setTimeout(() => {
-                    resolve(waitForConnectionReady(config, http, connection_id, counter + 1))
-                }, 2000);
-            })
-        }
-    })
-}
-
-async function waitForProofRequest (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
-    //console.log(`/present-proof/records/${config.presentation_exchange_id}`)
-    await http.get(`${config.base_url}/present-proof/records/${presentation_exchange_id}`, {
-        headers:{
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${config.auth_token}`
-        }
-    })
-    //.then(printResponse)
-    .then((value)=>{
-        console.log(`proof request state: ${value.data.state} #${counter}`)
-        if (!(value.data.state === 'verified' || value.data.state === 'abandoned')) {
-            return new Promise ((resolve) => {
-                setTimeout(() => {
-                    resolve(waitForProofRequest(presentation_exchange_id, config, http, counter + 1))
-                }, 2000);
-            })
-        }
-    })
-    .catch(reason => {
-        //TODO: due to a bug, we consider 404 as sucessful presentation
-        if (reason.response.status !== 404){
-            throw reason
-        }
-    })
-}
+import { Logger } from "@credo-ts/core";
 
 export class AgentTraction implements AriesAgent {
     public axios: AxiosInstance;
     private config: any
-    public constructor(config:any){
+    public readonly logger: Logger;
+    public constructor(config:any, logger:Logger){
         this.config = config
         this.axios = axios.create({baseURL: config.base_url})
+        this.logger = logger
         /*
         this.axios.interceptors.request.use(function (config) {
-            console.log(`Requesting ${config.url}`)
+            this.logger.info(`Requesting ${config.url}`)
             return config;
           }, function (error) {
             // Do something with request error
@@ -92,10 +28,74 @@ export class AgentTraction implements AriesAgent {
     acceptProof(proof: AcceptProofArgs): Promise<void> {
         throw new Error("Method not implemented.");
     }
+    async waitForLedgerTransactionAcked ( txn_id:string, counter: number) {
+        await this.axios.get(`/transactions/${txn_id}`, {
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then((value)=>{
+            this.logger.info(`transaction ${txn_id} state: ${value.data.state}`)
+            if (value.data.state !== 'transaction_acked') {
+                return new Promise ((resolve) => {
+                    setTimeout(() => {
+                        resolve(this.waitForLedgerTransactionAcked(txn_id, counter + 1))
+                    }, 2000);
+                })
+            }
+        })
+    }
+    
+    async _waitForConnectionReady (connection_id:string, counter: number) {
+        await this.axios.get(`/connections/${connection_id}`, {
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then((value)=>{
+            this.logger.info(`connection state: ${value.data.state}`)
+            if (value.data.state !== 'active') {
+                return new Promise ((resolve) => {
+                    setTimeout(() => {
+                        resolve(this._waitForConnectionReady(connection_id, counter + 1))
+                    }, 2000);
+                })
+            }
+        })
+    }
+    
+    async _waitForProofRequest (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
+        //this.logger.info(`/present-proof/records/${config.presentation_exchange_id}`)
+        await http.get(`${config.base_url}/present-proof/records/${presentation_exchange_id}`, {
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.auth_token}`
+            }
+        })
+        //.then(printResponse)
+        .then((value)=>{
+            this.logger.info(`proof request state: ${value.data.state} #${counter}`)
+            if (!(value.data.state === 'verified' || value.data.state === 'abandoned')) {
+                return new Promise ((resolve) => {
+                    setTimeout(() => {
+                        resolve(this._waitForProofRequest(presentation_exchange_id, config, http, counter + 1))
+                    }, 2000);
+                })
+            }
+        })
+        .catch(reason => {
+            //TODO: due to a bug, we consider 404 as sucessful presentation
+            if (reason.response.status !== 404){
+                throw reason
+            }
+        })
+    }
     async clearAllRecords() {
         let records: any[] | undefined = undefined
 
-        console.log(`Clearing Presentantion Exchage Records `)
+        this.logger.info(`Clearing Presentantion Exchage Records `)
         while (records==undefined || records?.length > 0) {
             records = await this.axios.get(`${this.config.base_url}/present-proof/records`, {
                 params: {},
@@ -120,7 +120,7 @@ export class AgentTraction implements AriesAgent {
             }
         }
 
-        console.log(`Clearing Credential Issuance Records `)
+        this.logger.info(`Clearing Credential Issuance Records `)
         records=undefined
         while (records==undefined || records?.length > 0) {
             records = await this.axios.get(`${this.config.base_url}/issue-credential/records`, {
@@ -144,7 +144,7 @@ export class AgentTraction implements AriesAgent {
                 }
             }
         }
-        console.log(`Clearing Connections`)
+        this.logger.info(`Clearing Connections`)
         records=undefined
         while (records==undefined || records?.length > 0) {
             records = await this.axios.get(`${this.config.base_url}/connections`, {
@@ -172,8 +172,8 @@ export class AgentTraction implements AriesAgent {
         }
     }
     waitForPresentation(presentation_exchange_id: string): Promise<void> {
-        console.log(`Waiting for Presentation ...`)
-        return waitForProofRequest(presentation_exchange_id, this.config, this.axios, 0)
+        this.logger.info(`Waiting for Presentation ...`)
+        return this._waitForProofRequest(presentation_exchange_id, this.config, this.axios, 0)
     }
     async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
         const proofRequest = builder.build()
@@ -207,7 +207,7 @@ export class AgentTraction implements AriesAgent {
             //handshake_protocols:['https://didcomm.org/connections/1.0'],
             //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
         }
-        console.dir(['create_invitation_payload', create_invitation_payload], {depth: 5})
+        this.logger.info('create_invitation_payload', create_invitation_payload)
         const invitation: any = (await this.axios.post(`${this.config.base_url}/out-of-band/create-invitation`, create_invitation_payload, {
             params: {},
             headers:{
@@ -215,9 +215,9 @@ export class AgentTraction implements AriesAgent {
                 'Authorization': `Bearer ${this.config.auth_token}`
             }
         }).then(extractResponseData))
-        console.dir(['OOB_invitation', invitation], {depth: 5})
+        this.logger.info('OOB_invitation', invitation)
         delete invitation.invitation.handshake_protocols
-        invitation.invitation_url = 'didcom://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
+        invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
         return {...invitation, presentation_exchange_id:proof["presentation_exchange_id"]}
     }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
@@ -255,9 +255,9 @@ export class AgentTraction implements AriesAgent {
         }
         invitation['@type'] ='did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation'
         return Promise.resolve(invitation).then(value => {
-            //console.log('invitation:')
-            //console.log(JSON.stringify(value, undefined, 2))
-            const baseUrl = 'didcomm://launch'
+            //this.logger.info('invitation:')
+            //this.logger.info(JSON.stringify(value, undefined, 2))
+            const baseUrl = 'bcwallet://launch'
             //const url = new URL(baseUrl)
             //url.searchParams.append('d_m', Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
             //this.config.current_invitation_url=url.toString() // does NOT work
@@ -324,11 +324,11 @@ export class AgentTraction implements AriesAgent {
                     }
                     return {state: value.state, created_at:value.created_at, updated_at:value.updated_at, txn_type:_txn?.operation?.type??_txn.result?.txn?.type}
                 })
-                console.dir(['transactions', transactions], {depth: 5})
+                this.logger.info('transactions', transactions)
             })
-            console.log('Creating Credential Definition ...')
+            this.logger.info('Creating Credential Definition ...')
             const credDef = credDefBuilder.build()
-            console.dir(['credDef', credDef], {depth: 5})
+            this.logger.info('credDef', credDef)
             return await axios.post(`${config.base_url}/credential-definitions`,credDef, {
                 headers:{
                     'Content-Type': 'application/json',
@@ -337,16 +337,15 @@ export class AgentTraction implements AriesAgent {
             })
             .then(printResponse)
             .then(async (value)=>{
-                console.log('Waiting for writing transaction to ledger' )
-                await waitForLedgerTransactionAcked(config, this.axios, value.data.txn.transaction_id, 0)
+                this.logger.info('Waiting for writing transaction to ledger' )
+                await this.waitForLedgerTransactionAcked(value.data.txn.transaction_id, 0)
                 return value
             })
             .then(async (value)=>{
-                console.log('Created CredDef')
-                console.dir(value.data, {depth: 5, maxStringLength: 50})
+                this.logger.info('Created CredDef', value.data)
                 const credential_definition_id = value.data.sent.credential_definition_id
                 //config.current_credential_definition_id=credential_definition_id
-                console.log(`Credential Definition created '${credential_definition_id}'`)
+                this.logger.info(`Credential Definition created '${credential_definition_id}'`)
                 credDefBuilder.setId(credential_definition_id)
                 return credential_definition_id as string
             })
@@ -355,7 +354,7 @@ export class AgentTraction implements AriesAgent {
             const credential_definition_id = credDef.id
             credDefBuilder.setId(credDef.id)
             credDefBuilder.setTag(credDef.tag)
-            console.log(`Credential Definition found '${credential_definition_id}'`)
+            this.logger.info(`Credential Definition found '${credential_definition_id}'`)
             return credential_definition_id as string
         }
     }
@@ -386,8 +385,8 @@ export class AgentTraction implements AriesAgent {
             }
         })
         .then((value)=>{
-            console.dir(value.data)
-            console.log(`invitation_url=${value.data.invitation_url}`)
+            this.logger.info('createInvitationToConnect', value.data)
+            this.logger.info(`invitation_url=${value.data.invitation_url}`)
             return {invitation_url: value.data.invitation_url, connection_id: value.data.connection_id}
         })
     }
@@ -402,8 +401,8 @@ export class AgentTraction implements AriesAgent {
             }
         })
         if (schemas.data.schema_ids.length === 0){
-            console.log('Creating Schema ...')
-            console.dir(['schema', schema])
+            this.logger.info('Creating Schema ...')
+            this.logger.info('schema', schema)
             await axios.post(`${config.base_url}/schemas`, schema, {
                 headers:{
                     'Content-Type': 'application/json',
@@ -411,25 +410,25 @@ export class AgentTraction implements AriesAgent {
                 }
             })
             .then(async (value)=>{
-                console.log('Waiting for writing transaction to ledger' )
-                await waitForLedgerTransactionAcked(config, this.axios, value.data.txn.transaction_id, 0)
+                this.logger.info('Waiting for writing transaction to ledger' )
+                await this.waitForLedgerTransactionAcked(value.data.txn.transaction_id, 0)
                 return value
             })
             .then((value)=>{
                 schemaBuilder.setSchemaId(value.data.sent.schema_id)
-                console.log(`Schema created '${value.data.sent.schema_id}'`)
+                this.logger.info(`Schema created '${value.data.sent.schema_id}'`)
                 return value.data.sent.schema_id
             })
         } else {
             schemaBuilder.setSchemaId(schemas.data.schema_ids[0])
-            console.log(`Schema found '${schemas.data.schema_ids[0]}'`)
+            this.logger.info(`Schema found '${schemas.data.schema_ids[0]}'`)
             return schemas.data.schema_ids[0]
         }
     }
     async sendCredential(cred: IssueCredentialPreviewV1, credential_definition_id: string, connection_id: string): Promise<string | undefined> {
         const config = this.config
         const http = this.axios
-        console.log(`Preparing Credential Request`)
+        this.logger.info(`Preparing Credential Request`)
         const data = {
             "auto_issue": true,
             "auto_remove": false,
@@ -438,7 +437,7 @@ export class AgentTraction implements AriesAgent {
             "credential_preview": await cred.build(),
             "trace": true,
         }
-        console.dir(data, {depth: 3, maxStringLength: 50})
+        this.logger.info('Credential Data', data)
         return await http.post(`/issue-credential/send-offer`,data, {
             headers:{
                 'Content-Type': 'application/json',
@@ -448,13 +447,13 @@ export class AgentTraction implements AriesAgent {
         .then((value)=>{
             const credential_exchange_id = value.data.credential_exchange_id
             cred.setCredentialExchangeId(credential_exchange_id)
-            console.log(`Credential offer sent!  ${credential_exchange_id}`)
+            this.logger.info(`Credential offer sent!  ${credential_exchange_id}`)
             return credential_exchange_id
         })
     }
     async waitForConnectionReady (connection_id:string) {
-        console.warn(`Waiting for connection ${connection_id} to get stablished`)
-        await waitForConnectionReady(this.config, this.axios, connection_id, 0)
+        this.logger.info(`Waiting for connection ${connection_id} to get stablished`)
+        await this._waitForConnectionReady(connection_id, 0)
     }
     async waitForOfferAccepted (credential_exchange_id: string) {
         const config = this.config
@@ -466,7 +465,7 @@ export class AgentTraction implements AriesAgent {
             }
         })
         .then((value)=>{
-            console.log(`Credential Exchange state: ${value.data.state}`)
+            this.logger.info(`Credential Exchange state: ${value.data.state}`)
             if (value.data.state !== 'credential_acked') {    
                 return new Promise ((resolve) => {
                     setTimeout(() => {

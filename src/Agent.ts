@@ -1,4 +1,4 @@
-import { ConnectionRecord, OutOfBandRecord } from "@credo-ts/core";
+import { Logger, OutOfBandRecord } from "@credo-ts/core";
 import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 
 export type ConnectionRef = {connection_id: string}
@@ -8,6 +8,7 @@ export type CredentialOfferRef = {id: string} & ConnectionRef
 export type AcceptProofArgs = {id: string}
 export type ReceiveInvitationResponse = { outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRef, invitationRequestsThreadIds?: string[] }
 export interface AriesAgent {
+    readonly logger: Logger
     createInvitationToConnect(): Promise<Invitation>
     receiveInvitation(invitation: Invitation): Promise<ReceiveInvitationResponse>;
     startup(): Promise<void>;

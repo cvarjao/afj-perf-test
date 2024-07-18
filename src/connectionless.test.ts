@@ -1,18 +1,17 @@
-import { describe, expect, test } from "@jest/globals";
+import { describe, test } from "@jest/globals";
 import { AgentTraction } from "./AgentTraction";
 import { AgentCredo } from "./AgentCredo";
-import { ConsoleLogger, Logger, LogLevel } from "@credo-ts/core";
-import { PersonCredential1, PersonSchema1, PersonSchemaV1_1 } from "./mocks";
+import { LogLevel } from "@credo-ts/core";
+import { PersonCredential1, PersonSchemaV1_1 } from "./mocks";
 import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2 } from "./lib";
-import { AgentManual } from "./AgentManual";
-import { AriesAgent } from "./Agent";
-import { log, error } from "console";
 import pino from "pino";
 
 const stepTimeout = 999999999
 const shortTimeout = (2*60)*1000
 
-import { fetch, setGlobalDispatcher, Agent} from 'undici';
+import { setGlobalDispatcher, Agent} from 'undici';
+import { AriesAgent } from "./Agent";
+import { AgentManual } from "./AgentManual";
 setGlobalDispatcher(new Agent({connect: { timeout: 20_000 }}));
 
 export const loggerTransport = pino.transport({
@@ -29,12 +28,13 @@ export const loggerTransport = pino.transport({
 })
 
 describe("Connectionless", () => {
-  const logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
+  const _logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
+  const logger = new PinoLogger(_logger, LogLevel.trace)
   const config = require("../local.env.json")["sovrin_testnet"];
   const ledgers = require("../ledgers.json");
-  const agentA = new AgentTraction(config);
+  const agentA = new AgentTraction(config, logger);
   //const agentB: AriesAgent = new AgentManual(config, new ConsoleLogger(LogLevel.trace))
-  const agentB = new AgentCredo(config,ledgers,new PinoLogger(logger, LogLevel.trace))
+  const agentB: AriesAgent =  process.env.HOLDER_TYPE === 'manual'? new AgentManual(config, logger): new AgentCredo(config,ledgers, logger)
   //new PinoLogger(logger, LogLevel.trace));
   const schema = new PersonSchemaV1_1();
   const credDef = new CredentialDefinitionBuilder()
@@ -42,20 +42,20 @@ describe("Connectionless", () => {
     .setSupportRevocation(true);
   
   beforeAll(async () => {
-    log('1 - beforeAll')
+    logger.info('1 - beforeAll')
     await agentA.startup()
     await agentB.startup()
     //await Promise.all([agentA.startup(), agentB.startup()]);
 
   }, stepTimeout);
   afterAll(async () => {
-    log('1 - afterAll')
+    logger.info('1 - afterAll')
     await agentB.shutdown();
     //logger.flush();
     //loggerTransport.end();
   }, stepTimeout);
   test("setup", async () => {
-    log('setup')
+    logger.info('setup')
 
     try{
       await agentA.createSchema(schema);
@@ -71,7 +71,7 @@ describe("Connectionless", () => {
     }
   }, stepTimeout)
   test("connection/v1/A1", async () => {
-    log('connection/v1/A1')
+    logger.info('connection/v1/A1')
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
             new RequestAttributeBuilder()
@@ -83,7 +83,7 @@ describe("Connectionless", () => {
     await verifyCredentialA1(agentA, agentB, proofRequest)
   }, shortTimeout);
   test("connection/v1/A2", async () => {
-    log("connection/v1/A2")
+    logger.info("connection/v1/A2")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
             new RequestAttributeBuilder()
@@ -95,7 +95,7 @@ describe("Connectionless", () => {
     await verifyCredentialA2(agentA, agentB, proofRequest)
   }, shortTimeout);
   test("connection/OOB/B1", async () => {
-    log("connection/OOB/B1")
+    logger.info("connection/OOB/B1")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
             new RequestAttributeBuilder()
@@ -107,7 +107,7 @@ describe("Connectionless", () => {
     await verifyCredentialB1(agentA, agentB, proofRequest)
   }, shortTimeout);
   test("connection/OOB/B2", async () => {
-    log("connection/OOB/B2")
+    logger.info("connection/OOB/B2")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
             new RequestAttributeBuilder()

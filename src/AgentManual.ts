@@ -1,17 +1,13 @@
-import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
-import { Agent, ConnectionRecord, ConnectionsModule, CredentialExchangeRecord, CredentialsModule, Logger, MediationRecipientModule, ProofsModule, V2CredentialProtocol, V2ProofProtocol } from "@credo-ts/core";
-import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService, LegacyIndyCredentialFormatService, LegacyIndyProofFormatService, V1CredentialProtocol, V1ProofProtocol } from "@credo-ts/anoncreds";
-import { AskarModule } from "@credo-ts/askar";
-import { IndyVdrModule } from "@credo-ts/indy-vdr";
+import { AcceptProofArgs, AriesAgent, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
+import { Logger } from "@credo-ts/core";
 import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import QRCode from 'qrcode'
-import readline from 'readline';
 import fs from 'node:fs';
 import path from 'node:path';
 
 export class AgentManual implements AriesAgent {
     config: any;
-    logger: Logger;
+    public readonly logger: Logger;
     public constructor(config:any,logger: Logger){
         this.config = config
         this.logger = logger
