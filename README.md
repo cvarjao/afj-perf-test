@@ -23,5 +23,5 @@ ngrok http "file://${PWD}/tmp"
 ```
 ## Run Test
 ```
-yarn run ts-node src/index2.ts
+yarn jest --runInBand --detectOpenHandles --forceExit
 ```
