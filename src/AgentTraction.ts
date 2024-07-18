@@ -4,6 +4,25 @@ import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPrevie
 import { PersonCredential1 } from "./mocks";
 
 
+async function waitForLedgerTransactionAcked (config: any, http: AxiosInstance, txn_id:string, counter: number) {
+    await http.get(`/transactions/${txn_id}`, {
+        headers:{
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${config.auth_token}`
+        }
+    })
+    .then((value)=>{
+        console.log(`transaction ${txn_id} state: ${value.data.state}`)
+        if (value.data.state !== 'transaction_acked') {
+            return new Promise ((resolve) => {
+                setTimeout(() => {
+                    resolve(waitForLedgerTransactionAcked(config, http, txn_id, counter + 1))
+                }, 2000);
+            })
+        }
+    })
+}
+
 async function waitForConnectionReady (config: any, http: AxiosInstance, connection_id:string, counter: number) {
     await http.get(`/connections/${connection_id}`, {
         headers:{
@@ -138,6 +157,7 @@ export class AgentTraction implements AriesAgent {
             .then(printResponse)
             .then(extractResponseData)
             .then((data:any) =>{return data.results})
+            records= records?.filter((item)=>!item?.alias?.endsWith('-endorser'))
             if (records !== undefined && records.length > 0) {
                 for (const record of records) {
                     await this.axios.delete(`${this.config.base_url}/connections/${record.connection_id}`, {
@@ -307,14 +327,21 @@ export class AgentTraction implements AriesAgent {
                 console.dir(['transactions', transactions], {depth: 5})
             })
             console.log('Creating Credential Definition ...')
-            return await axios.post(`${config.base_url}/credential-definitions`,credDefBuilder.build(), {
+            const credDef = credDefBuilder.build()
+            console.dir(['credDef', credDef], {depth: 5})
+            return await axios.post(`${config.base_url}/credential-definitions`,credDef, {
                 headers:{
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${config.auth_token}`
                 }
             })
             .then(printResponse)
-            .then((value)=>{
+            .then(async (value)=>{
+                console.log('Waiting for writing transaction to ledger' )
+                await waitForLedgerTransactionAcked(config, this.axios, value.data.txn.transaction_id, 0)
+                return value
+            })
+            .then(async (value)=>{
                 console.log('Created CredDef')
                 console.dir(value.data, {depth: 5, maxStringLength: 50})
                 const credential_definition_id = value.data.sent.credential_definition_id
@@ -376,11 +403,17 @@ export class AgentTraction implements AriesAgent {
         })
         if (schemas.data.schema_ids.length === 0){
             console.log('Creating Schema ...')
+            console.dir(['schema', schema])
             await axios.post(`${config.base_url}/schemas`, schema, {
                 headers:{
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${config.auth_token}`
                 }
+            })
+            .then(async (value)=>{
+                console.log('Waiting for writing transaction to ledger' )
+                await waitForLedgerTransactionAcked(config, this.axios, value.data.txn.transaction_id, 0)
+                return value
             })
             .then((value)=>{
                 schemaBuilder.setSchemaId(value.data.sent.schema_id)

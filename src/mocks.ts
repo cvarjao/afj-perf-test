@@ -14,6 +14,12 @@ export class PersonSchema1 extends SchemaBuilder {
         this.setName('Person').setVersion('1.0').setAttributes(Object.values(PersonAtributes))
     }
 }
+export class PersonSchemaV1_1 extends SchemaBuilder {
+    constructor() {
+        super()
+        this.setName('Person').setVersion('1.1').setAttributes(Object.values(PersonAtributes))
+    }
+}
 
 export class PersonCredential1 extends IssueCredentialPreviewV1 {
     constructor(cred_def: CredentialDefinitionBuilder) {
