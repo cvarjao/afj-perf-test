@@ -6,4 +6,5 @@ invitation_url.txt
 invitation.json
 invite-acm.json
 tmp/
-*.json
+/*.json
+.DS_Store

@@ -85,12 +85,14 @@ export class AgentTraction implements AriesAgent {
                 })
             }
         })
+        /*
         .catch(reason => {
             //TODO: due to a bug, we consider 404 as sucessful presentation
             if (reason.response.status !== 404){
                 throw reason
             }
         })
+        */
     }
     async clearAllRecords() {
         let records: any[] | undefined = undefined
@@ -178,7 +180,7 @@ export class AgentTraction implements AriesAgent {
     async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
         const proofRequest = builder.build()
         const proof = await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
-            "auto_remove": true,
+            "auto_remove": false,
             "auto_verify": true,
             "comment": "string",
             "trace": false,

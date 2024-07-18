@@ -324,12 +324,12 @@ export class AgentCredo implements AriesAgent {
     this.agent = await createAgent(this.config, this.ledgers, this.logger);
   }
   public async shutdown() {
-    await this.agent.mediationRecipient.stopMessagePickup();
+    await this.agent.mediationRecipient?.stopMessagePickup();
     await this.agent.shutdown();
-    for (const t of this.agent.outboundTransports) {
+    for (const t of this.agent?.outboundTransports) {
       await t.stop();
     }
-    for (const t of this.agent.inboundTransports) {
+    for (const t of this.agent?.inboundTransports) {
       await t.stop();
     }
   }
