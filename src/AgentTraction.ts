@@ -477,4 +477,59 @@ export class AgentTraction implements AriesAgent {
             }
         })
     }
+    async sendBasicMessage(connection_id: string, content: string): Promise<any>{
+        return await this.axios.post(`/connections/${connection_id}/send-message`,{
+            content
+        }, {
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then(()=>{
+            return this.axios.get(`/basicmessages`,{
+                params: {
+                    connection_id,
+                    state: 'sent'
+                },
+                headers:{
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.auth_token}`
+                }
+            })
+        })
+        .then(extractResponseData)
+        .then(data => {
+            const results: any[] = data.results
+            return results.find(item => item.content === content)
+        })
+    }
+    async waitForBasicMessage(connection_id: string, receivedAfter: number, content: string[]): Promise<any>{
+        return this._waitForBasicMessage(connection_id, receivedAfter, content, 0)
+    }
+    private async _waitForBasicMessage(connection_id: string, receivedAfter: number, content: string[], counter: number): Promise<any>{
+        return await this.axios.get(`/basicmessages`,{
+            params: {
+                connection_id,
+                state: 'received'
+            },
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then(extractResponseData)
+        .then(data => {
+            const results: any[] = data.results
+            const item = results.find(item => Date.parse(item.created_at) >= receivedAfter && content.includes(item.content.toLowerCase()))
+            if (item) return item
+            return new Promise ((resolve) => {
+                setTimeout(() => {
+                    resolve(this._waitForBasicMessage(connection_id, receivedAfter, content, counter +1))
+                }, 2000);
+            })
+        })
+    }
 }

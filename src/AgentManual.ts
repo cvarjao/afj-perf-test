@@ -4,6 +4,8 @@ import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from 
 import QRCode from 'qrcode'
 import fs from 'node:fs';
 import path from 'node:path';
+import { log } from "console"
+import chalk from "chalk"
 
 export class AgentManual implements AriesAgent {
     config: any;
@@ -12,6 +14,10 @@ export class AgentManual implements AriesAgent {
         this.config = config
         this.logger = logger
     }
+  sendBasicMessage(connection_id: string, content: string): Promise<any> {
+    log(chalk.yellowBright(`> Send a message with '${content}' as content`))
+    return Promise.resolve()
+  }
   sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
     throw new Error("Method not implemented.");
   }
@@ -41,8 +47,8 @@ export class AgentManual implements AriesAgent {
         throw new Error("Method not implemented.");
     }
     async receiveInvitation(invitationRef: Invitation): Promise<ReceiveInvitationResponse> {
-      const relativePath = '/Library/Android/sdk/emulator/resources/custom.png'
-      const QRCodePath = path.join(process.env.HOME as string, relativePath)
+      const relativePath = './tmp/__qrcode.png'
+      const QRCodePath = path.resolve(process.cwd() as string, relativePath)
       fs.mkdirSync(path.dirname(QRCodePath), { recursive: true })
       fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), invitationRef.invitation_url)
       fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((invitationRef as any)))
@@ -51,6 +57,7 @@ export class AgentManual implements AriesAgent {
             invitationRef.invitation_url,
             {margin: 10}
       )
+      log(chalk.yellowBright(`> Scan QR Code image from ${relativePath}`))
       return {}
     }
     public async startup(){

@@ -8,3 +8,4 @@ invite-acm.json
 tmp/
 /*.json
 .DS_Store
+logs/*.log.ndjson

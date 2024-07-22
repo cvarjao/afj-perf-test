@@ -9,6 +9,7 @@ export type AcceptProofArgs = {id: string}
 export type ReceiveInvitationResponse = { outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRef, invitationRequestsThreadIds?: string[] }
 export interface AriesAgent {
     readonly logger: Logger
+    sendBasicMessage(connection_id: string, content: string): Promise<any>
     createInvitationToConnect(): Promise<Invitation>
     receiveInvitation(invitation: Invitation): Promise<ReceiveInvitationResponse>;
     startup(): Promise<void>;

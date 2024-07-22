@@ -3,7 +3,7 @@ import { AgentTraction } from "./AgentTraction";
 import { AgentCredo } from "./AgentCredo";
 import { LogLevel } from "@credo-ts/core";
 import { PersonCredential1, PersonSchemaV1_1 } from "./mocks";
-import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2 } from "./lib";
+import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2, waitFor } from "./lib";
 import pino from "pino";
 
 const stepTimeout = 999999999
@@ -20,14 +20,14 @@ export const loggerTransport = pino.transport({
       level: 'trace',
       target: 'pino/file',
       options: {
-        destination: './log.ndjson',
+        destination: `./logs/run-${Date.now()}.log.ndjson`,
         autoEnd: true,
       },
     }
   ],
 })
 
-describe("Connectionless", () => {
+describe("Mandatory", () => {
   const _logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
   const logger = new PinoLogger(_logger, LogLevel.trace)
   const config = require("../local.env.json")["sovrin_testnet"];
@@ -54,7 +54,25 @@ describe("Connectionless", () => {
     //logger.flush();
     //loggerTransport.end();
   }, stepTimeout);
-  test("setup", async () => {
+  test("connected/v1/M1", async () => {
+    const issuer = agentA
+    const holder = agentB
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const remoteInvitation = await issuer.createInvitationToConnect()
+    logger.info(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    logger.info(`waiting for issuer to accept connection`)
+    await issuer.waitForConnectionReady(remoteInvitation.connection_id)
+    logger.info(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
+    const msgSent: any = await issuer.sendBasicMessage(remoteInvitation.connection_id, 'Hello')
+    logger.info('Message Sent:', msgSent)
+    await waitFor(10_000)
+    await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
+    const msgRcvd = await issuer.waitForBasicMessage(remoteInvitation.connection_id, Date.parse(msgSent.created_at as string), ["k", "ok"])
+    logger.info('Message Received:', msgRcvd)
+  }, shortTimeout);
+  test.only("setup", async () => {
     logger.info('setup')
 
     try{
@@ -70,7 +88,7 @@ describe("Connectionless", () => {
       throw error
     }
   }, stepTimeout)
-  test("connection/v1/A1", async () => {
+  test.only("connectionless/v1/A1", async () => {
     logger.info('connection/v1/A1')
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -82,7 +100,7 @@ describe("Connectionless", () => {
     )
     await verifyCredentialA1(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test("connection/v1/A2", async () => {
+  test("connectionless/v1/A2", async () => {
     logger.info("connection/v1/A2")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -94,7 +112,7 @@ describe("Connectionless", () => {
     )
     await verifyCredentialA2(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test("connection/OOB/B1", async () => {
+  test("connectionless/OOB/B1", async () => {
     logger.info("connection/OOB/B1")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -106,7 +124,7 @@ describe("Connectionless", () => {
     )
     await verifyCredentialB1(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test("connection/OOB/B2", async () => {
+  test("connectionless/OOB/B2", async () => {
     logger.info("connection/OOB/B2")
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",

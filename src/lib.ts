@@ -2,12 +2,16 @@ import { readFileSync } from 'fs'
 import axios, {isCancel, AxiosError, AxiosInstance} from 'axios';
 import { PersonCredential1 } from './mocks';
 import querystring from 'querystring';
-import { BaseLogger, LogLevel } from '@credo-ts/core';
+import { BaseLogger, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
 import { Logger } from 'pino';
 import { AgentTraction } from './AgentTraction';
 import { AriesAgent } from './Agent';
 import fs from 'node:fs';
 import path from 'node:path';
+import { log, dir} from "console"
+import chalk from 'chalk';
+import { AgentCredo } from './AgentCredo';
+import { AnonCredsApi } from '@credo-ts/anoncreds';
 
 export const toLocalISOString = (date:Date) =>{
     const tzoffset = (new Date()).getTimezoneOffset() // offset in minutes
@@ -61,11 +65,7 @@ const sanitize = (obj: any) => {
 }
 
 export const waitFor = (ms:number) => {
-    return new Promise ((resolve) => {
-        setTimeout(() => {
-            resolve(true)
-        }, ms);
-    })
+    return new Promise ((resolve) => {setTimeout(() => {resolve(true)}, ms);})
 }
 function randomString(length: number) {
     // Declare all characters
@@ -555,8 +555,8 @@ export const sendPersonCredential = async (ctx: Context, state: any, cred: Issue
 }
 
 export const printResponse = (response: any) => {
-    console.log(`> ${response.request.method} > ${response.request.path}`)
-    console.dir(response.data,{depth: 6})
+    log(`> ${response.request.method} > ${response.request.path}`)
+    dir(response.data,{depth: 6})
     return response
 }
 
@@ -795,11 +795,47 @@ export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, 
  * Connectionless (Connection/v1)
  */
 export const verifyCredentialA1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
+    const { logger } = verifier
     const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
     const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
     //console.dir(['agentBConnectionRef', agentBConnectionRef2])
     if (agentBConnectionRef2.invitationRequestsThreadIds){
+        logger.info('outOfBandInvitation.getRequests():' ,agentBConnectionRef2.outOfBandRecord?.outOfBandInvitation.getRequests())
       for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+        log(chalk.yellowBright(`> AgentCredo=${holder instanceof AgentCredo}`))
+        if (holder instanceof AgentCredo) {
+            const agent = (holder as AgentCredo).agent
+            let proofs: ProofExchangeRecord[] = []
+            while (proofs.length == 0) {
+                proofs = await agent.proofs.findAllByQuery({threadId: proofId})
+                await waitFor(1000)
+            }
+            logger.info(`agent.proofs.getAll() size:${proofs.length}:`, proofs)
+            
+            const credentials = await agent.proofs.getCredentialsForRequest({proofRecordId: proofs[0].id})
+            for (const key in credentials.proofFormats.indy?.attributes) {
+                const items = credentials.proofFormats.indy?.attributes[key]
+                for (let index = 0; index < items.length; index++) {
+                    const element = items[index];
+                    logger.info(`indy.attributes[${key}][${index}].credentialId = ` + element)
+                    logger.info(`indy.attributes[${key}][${index}].credentialInfo.revocationRegistryId = ` + element.credentialInfo.revocationRegistryId)
+                    logger.info(`indy.attributes[${key}][${index}].credentialInfo.credentialId = ` + element.credentialInfo.credentialId)
+                    logger.info(`indy.attributes[${key}][${index}].credentialInfo.credentialRevocationId = ` + element.credentialInfo.credentialRevocationId)
+                }
+                
+            }
+            
+            logger.info('anoncreds.attributes:', credentials.proofFormats.anoncreds?.attributes)
+            const anonCredsApi = agent.dependencyManager.resolve(AnonCredsApi)
+            logger.info(`anonCredsApi.config.anoncreds.version = ${anonCredsApi.config.anoncreds.version}`)
+            //anonCredsApi.getRevocationStatusList()
+            //anonCredsApi.getRevocationStatusList()
+            //await waitFor(10_000)
+            //throw new Error('something')
+            //await holder.acceptProof({id: proofId})
+        }
+        log(chalk.yellowBright(`> getting ready to send proof in 10s`))
+        await waitFor(10_000)
         await holder.acceptProof({id: proofId})
       }
     }

@@ -219,6 +219,9 @@ export class AgentCredo implements AriesAgent {
     this.ledgers = ledgers;
     this.logger = logger;
   }
+  sendBasicMessage(connection_id: string, content: string): Promise<any> {
+    return this.agent.basicMessages.sendMessage(connection_id, content)
+  }
   sendOOBConnectionlessProofRequest(
     builder: ProofRequestBuilder
   ): Promise<any | undefined> {
@@ -324,8 +327,8 @@ export class AgentCredo implements AriesAgent {
     this.agent = await createAgent(this.config, this.ledgers, this.logger);
   }
   public async shutdown() {
-    await this.agent.mediationRecipient?.stopMessagePickup();
-    await this.agent.shutdown();
+    await this.agent?.mediationRecipient?.stopMessagePickup();
+    await this.agent?.shutdown();
     for (const t of this.agent?.outboundTransports) {
       await t.stop();
     }
