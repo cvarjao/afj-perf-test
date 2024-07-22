@@ -81,7 +81,7 @@ describe("AppAttestation", () => {
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
 
     const proofRequest = new ProofRequestBuilder()
-      .addRequestedAttribute("studentInfo",
+      .addRequestedAttribute("attestation_info",
         new RequestAttributeBuilder()
           .setNames([
             "operating_system_version",
