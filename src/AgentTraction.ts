@@ -270,6 +270,25 @@ export class AgentTraction implements AriesAgent {
             return {invitation: value, presentation_exchange_id: proof.presentation_exchange_id, invitation_url}
         })
     }
+    async sendProofRequestV1(connection_id: string, proofRequestbuilder: ProofRequestBuilder): Promise<any> {
+        const proofRequest = proofRequestbuilder.build()
+        return await this.axios.post(`${this.config.base_url}/present-proof/send-request`,{
+            "auto_remove": false,
+            "auto_verify": true,
+            "comment": "string",
+            "trace": false,
+            "connection_id": connection_id,
+            proof_request: proofRequest
+        }, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then(extractResponseData)
+      }
     findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
         throw new Error("Method not implemented.");
     }

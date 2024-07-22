@@ -88,8 +88,9 @@ export class SchemaBuilder {
     getSchemaId() {
         return this.schema_id
     }
-    setSchemaId(value:string) {
+    setSchemaId(value:string): SchemaBuilder {
         this.schema_id = value
+        return this
     }
     getName() {
         return this.schema_name
