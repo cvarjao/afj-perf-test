@@ -292,6 +292,32 @@ export class AgentTraction implements AriesAgent {
         invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
         return {...invitation, presentation_exchange_id:proof["pres_ex_id"]}
     }
+    async sendConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<any | undefined> {
+        const proofRequest = builder.build()
+        const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        }).then(extractResponseData))
+        //console.dir(['wallet', wallet])
+
+        const proof = await this.createPresentProofV2(builder)
+        const invitation = JSON.parse(JSON.stringify(proof.pres_request))
+        invitation['comment']= null
+        invitation['~service']= {
+            "recipientKeys": [wallet.result.verkey],
+            "routingKeys": null,
+            "serviceEndpoint":  this.config.serviceEndpoint
+        }
+        invitation['@type'] ='https://didcomm.org/present-proof/2.0/request-presentation'
+        return Promise.resolve(invitation).then(value => {
+            const baseUrl = 'bcwallet://launch'
+            const invitation_url = baseUrl+'?c_i='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
+            return {invitation: value, pres_ex_id: proof.pres_ex_id, invitation_url}
+        })
+    }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
         const proofRequest = builder.build()
         const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
@@ -302,23 +328,9 @@ export class AgentTraction implements AriesAgent {
             }
         }).then(extractResponseData))
         //console.dir(['wallet', wallet])
-        const proof = await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
-            "auto_remove": true,
-            "auto_verify": true,
-            "comment": "string",
-            "trace": false,
-            proof_request: proofRequest
-        }, {
-            params: {},
-            headers:{
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.auth_token}`
-            }
-        })
-        .then(printResponse)
-        .then(extractResponseData)
+
+        const proof = await this.createPresentProofV1(builder)
         const invitation = JSON.parse(JSON.stringify(proof.presentation_request_dict))
-        //this.config.presentation_exchange_id = proof.presentation_exchange_id
         invitation['comment']= null
         invitation['~service']= {
             "recipientKeys": [wallet.result.verkey],
@@ -327,16 +339,8 @@ export class AgentTraction implements AriesAgent {
         }
         invitation['@type'] ='did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/present-proof/1.0/request-presentation'
         return Promise.resolve(invitation).then(value => {
-            //this.logger.info('invitation:')
-            //this.logger.info(JSON.stringify(value, undefined, 2))
             const baseUrl = 'bcwallet://launch'
-            //const url = new URL(baseUrl)
-            //url.searchParams.append('d_m', Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
-            //this.config.current_invitation_url=url.toString() // does NOT work
-            //this.config.current_invitation_url=Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64') // does NOT work
-            const invitation_url = baseUrl+'?oob='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64')) // does NOT work
-            //this.config.current_invitation_url=JSON.stringify(value) // works
-            
+            const invitation_url = baseUrl+'?oob='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
             return {invitation: value, presentation_exchange_id: proof.presentation_exchange_id, invitation_url}
         })
     }

@@ -51,10 +51,10 @@ describe("Mandatory", () => {
   afterAll(async () => {
     logger.info('1 - afterAll')
     await agentB.shutdown();
-    //logger.flush();
+    _logger.flush();
     //loggerTransport.end();
   }, stepTimeout);
-  test.skip("connected/v1/M1", async () => {
+  test("connected/v1/M1", async () => {
     const issuer = agentA
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -72,7 +72,7 @@ describe("Mandatory", () => {
     const msgRcvd = await issuer.waitForBasicMessage(remoteInvitation.connection_id, Date.parse(msgSent.created_at as string), ["k", "ok"])
     logger.info('Message Received:', msgRcvd)
   }, shortTimeout);
-  test.skip("setup", async () => {
+  test("setup", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
 
     try{
@@ -88,7 +88,7 @@ describe("Mandatory", () => {
       throw error
     }
   }, stepTimeout)
-  test.skip("connectionless/present-proof-1.0/encoded-payload", async () => {
+  test("connectionless/present-proof-1.0/encoded-payload", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -100,7 +100,7 @@ describe("Mandatory", () => {
     )
     await verifyCredentialA1(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test.skip("connectionless/present-proof-1.0/url-redirect", async () => {
+  test("connectionless/present-proof-1.0/url-redirect", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -112,7 +112,54 @@ describe("Mandatory", () => {
     )
     await verifyCredentialA2(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test.skip("OOB/connectionless/present-proof-1.0/encoded-payload", async () => {
+  test("connectionless/present-proof-2.0/encoded-payload", async () => {
+    const verifier = agentA
+    const holder = agentB
+    const { logger } = verifier
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const proofRequest = new ProofRequestBuilder()
+        .addRequestedAttribute("studentInfo",
+            new RequestAttributeBuilder()
+                .setNames(["given_names", "family_name"])
+                //.addRestriction({"cred_def_id": credDef.getId()})
+                .addRestriction({"schema_name": schema.getName(),"schema_version": schema.getVersion(),"issuer_did": credDef.getId()?.split(':')[0]})
+                .setNonRevoked(seconds_since_epoch(new Date()))
+    )
+    const remoteInvitation2 = await verifier.sendConnectionlessProofRequestV2(proofRequest)
+    const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
+    //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+    if (agentBConnectionRef2.invitationRequestsThreadIds){
+      for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+        await holder.acceptProof({id: proofId})
+      }
+    }
+    logger.info('remoteInvitation2', remoteInvitation2)
+    await verifier.waitForPresentationV2(remoteInvitation2.pres_ex_id)
+  }, shortTimeout);
+  test("connectionless/present-proof-2.0/url-redirect", async () => {
+    const verifier = agentA
+    const holder = agentB
+    const { logger } = verifier
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const proofRequest = new ProofRequestBuilder()
+        .addRequestedAttribute("studentInfo",
+            new RequestAttributeBuilder()
+                .setNames(["given_names", "family_name"])
+                //.addRestriction({"cred_def_id": credDef.getId()})
+                .addRestriction({"schema_name": schema.getName(),"schema_version": schema.getVersion(),"issuer_did": credDef.getId()?.split(':')[0]})
+                .setNonRevoked(seconds_since_epoch(new Date()))
+    )
+    const remoteInvitation2 = await withRedirectUrl(await verifier.sendConnectionlessProofRequestV2(proofRequest))
+    const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
+    //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+    if (agentBConnectionRef2.invitationRequestsThreadIds){
+      for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+        await holder.acceptProof({id: proofId})
+      }
+    }
+    await verifier.waitForPresentationV2(remoteInvitation2.pres_ex_id)
+  }, shortTimeout);
+  test("OOB/connectionless/present-proof-1.0/encoded-payload", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -124,7 +171,7 @@ describe("Mandatory", () => {
     )
     await verifyCredentialB1(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test.skip("OOB/connectionless/present-proof-1.0/url-redirect", async () => {
+  test("OOB/connectionless/present-proof-1.0/url-redirect", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
     const proofRequest = new ProofRequestBuilder()
         .addRequestedAttribute("studentInfo",
@@ -136,7 +183,7 @@ describe("Mandatory", () => {
     )
     await verifyCredentialB2(agentA, agentB, proofRequest)
   }, shortTimeout);
-  test.skip("OOB/connectionless/present-proof-2.0/encoded-payload", async () => {
+  test("OOB/connectionless/present-proof-2.0/encoded-payload", async () => {
     const verifier = agentA
     const holder = agentB
     const { logger } = verifier
