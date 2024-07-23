@@ -66,7 +66,7 @@ export class AgentTraction implements AriesAgent {
         })
     }
     
-    async _waitForProofRequest (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
+    async _waitForProofRequestV1 (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
         //this.logger.info(`/present-proof/records/${config.presentation_exchange_id}`)
         await http.get(`${config.base_url}/present-proof/records/${presentation_exchange_id}`, {
             headers:{
@@ -80,19 +80,31 @@ export class AgentTraction implements AriesAgent {
             if (!(value.data.state === 'verified' || value.data.state === 'abandoned')) {
                 return new Promise ((resolve) => {
                     setTimeout(() => {
-                        resolve(this._waitForProofRequest(presentation_exchange_id, config, http, counter + 1))
+                        resolve(this._waitForProofRequestV1(presentation_exchange_id, config, http, counter + 1))
                     }, 2000);
                 })
             }
         })
-        /*
-        .catch(reason => {
-            //TODO: due to a bug, we consider 404 as sucessful presentation
-            if (reason.response.status !== 404){
-                throw reason
+    }
+    async _waitForProofRequestV2 (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
+        //this.logger.info(`/present-proof/records/${config.presentation_exchange_id}`)
+        await http.get(`${config.base_url}/present-proof-2.0/records/${presentation_exchange_id}`, {
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.auth_token}`
             }
         })
-        */
+        //.then(printResponse)
+        .then((value)=>{
+            this.logger.info(`proof request state: ${value.data.state} #${counter}`)
+            if (!(value.data.state === 'done' || value.data.state === 'abandoned')) {
+                return new Promise ((resolve) => {
+                    setTimeout(() => {
+                        resolve(this._waitForProofRequestV2(presentation_exchange_id, config, http, counter + 1))
+                    }, 2000);
+                })
+            }
+        })
     }
     async clearAllRecords() {
         let records: any[] | undefined = undefined
@@ -175,11 +187,17 @@ export class AgentTraction implements AriesAgent {
     }
     waitForPresentation(presentation_exchange_id: string): Promise<void> {
         this.logger.info(`Waiting for Presentation ...`)
-        return this._waitForProofRequest(presentation_exchange_id, this.config, this.axios, 0)
+        return this._waitForProofRequestV1(presentation_exchange_id, this.config, this.axios, 0)
+    
     }
-    async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+    async waitForPresentationV2(presentation_exchange_id: string): Promise<void> {
+        this.logger.info(`Waiting for Presentation ...`)
+        return this._waitForProofRequestV2(presentation_exchange_id, this.config, this.axios, 0)
+    
+    }
+    async createPresentProofV1(builder: ProofRequestBuilder): Promise<any> {
         const proofRequest = builder.build()
-        const proof = await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
+        return await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
             "auto_remove": false,
             "auto_verify": true,
             "comment": "string",
@@ -194,6 +212,28 @@ export class AgentTraction implements AriesAgent {
         })
         .then(printResponse)
         .then(extractResponseData)
+    }
+    async createPresentProofV2(builder: ProofRequestBuilder): Promise<any | undefined> {
+        const proofRequest = builder.buildv2()
+        return await this.axios.post(`${this.config.base_url}/present-proof-2.0/create-request`,{
+            "auto_remove": false,
+            "auto_verify": true,
+            "comment": "string",
+            "trace": false,
+            presentation_request: proofRequest
+        }, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then(extractResponseData)
+    }
+
+    async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+        const proof = await this.createPresentProofV1(builder)
         const create_invitation_payload = {
             "attachments": [
                 {
@@ -221,6 +261,36 @@ export class AgentTraction implements AriesAgent {
         delete invitation.invitation.handshake_protocols
         invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
         return {...invitation, presentation_exchange_id:proof["presentation_exchange_id"]}
+    }
+    async sendOOBConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<any | undefined> {
+        const proof = await this.createPresentProofV2(builder)
+        const create_invitation_payload = {
+            "attachments": [
+                {
+                    "id": proof["pres_ex_id"],
+                    "type": "present-proof",
+                    "data": {"json": proof},
+                }
+            ],
+            "label": "vc-authn-oidc",
+            //"goal": "request-proof",
+            //"goal_code": "request-proof",
+            "use_public_did": false,
+            //handshake_protocols:['https://didcomm.org/connections/1.0'],
+            //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
+        }
+        this.logger.info('create_invitation_payload', create_invitation_payload)
+        const invitation: any = (await this.axios.post(`${this.config.base_url}/out-of-band/create-invitation`, create_invitation_payload, {
+            params: {},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        }).then(extractResponseData))
+        this.logger.info('OOB_invitation', invitation)
+        delete invitation.invitation.handshake_protocols
+        invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
+        return {...invitation, presentation_exchange_id:proof["pres_ex_id"]}
     }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
         const proofRequest = builder.build()

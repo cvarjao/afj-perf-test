@@ -267,6 +267,7 @@ export class ProofRequestBuilder {
     private requested_attributes: any = {}
     private requested_predicates: any = {}
     private nonce:string = "1234567890" //randomString(10)
+    private non_revoked?: any = undefined
 
     getName() {
         return this.name
@@ -282,6 +283,12 @@ export class ProofRequestBuilder {
         this.version = name
         return this
     }
+    public setNonRevoked(): ProofRequestBuilder
+    public setNonRevoked(instant?: Date): ProofRequestBuilder {
+        const ref = instant??new Date()
+        this.non_revoked = {"from":ref.getTime(), "to": ref.getTime()}
+        return this
+    }
 
     addRequestedAttribute(group: string, attribute:RequestAttributeBuilder) {
         this.requested_attributes[group] = attribute.build()
@@ -292,8 +299,21 @@ export class ProofRequestBuilder {
             "name": this.name,
             "version": this.version,
             "nonce": this.nonce,
+            "non_revoked": this.non_revoked,
             "requested_attributes": this.requested_attributes,
             "requested_predicates": this.requested_predicates,
+        })
+    }
+    buildv2() {
+        return sanitize({
+            "indy":{
+                "name": this.name,
+                "version": this.version,
+                "nonce": this.nonce,
+                "non_revoked": this.non_revoked,
+                "requested_attributes": this.requested_attributes,
+                "requested_predicates": this.requested_predicates,
+            }
         })
     }
 }
@@ -900,4 +920,11 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
     }
     logger.info('Verifier is waiting for proofs')
     await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
+  }
+  export const withRedirectUrl = async (remoteInvitation3: any): Promise<any> => {
+    const invitationFile = `${remoteInvitation3.invitation['@id']}.json`
+    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.invitation, undefined, 2))
+    const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
+    remoteInvitation3.invitation_url = `${publicUrl}/${invitationFile}`
+    return remoteInvitation3
   }
