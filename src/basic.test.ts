@@ -7,7 +7,7 @@ import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestB
 import pino from "pino";
 
 const stepTimeout = 120_000
-const shortTimeout = (2*60)*1000
+const shortTimeout = 40_000
 
 import { setGlobalDispatcher, Agent} from 'undici';
 import { AriesAgent, ResponseCreateInvitationV1 } from "./Agent";
@@ -106,6 +106,29 @@ describe("Mandatory", () => {
       throw error
     }
   }, stepTimeout)
+  test("connected/present-proof-1.0/encoded-payload", async () => {
+    //const issuer = agentA
+    const verifier = agentA
+    const holder = agentB
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const remoteInvitation = await verifier.createInvitationToConnect() as ResponseCreateInvitationV1
+    logger.info(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    logger.info(`waiting for issuer to accept connection`)
+    await verifier.waitForConnectionReady(remoteInvitation.payload.connection_id as string)
+    logger.info(`${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
+    const proofRequest = new ProofRequestBuilder()
+        .addRequestedAttribute("studentInfo",
+            new RequestAttributeBuilder()
+                .setNames(["given_names", "family_name"])
+                //.addRestriction({"cred_def_id": credDef.getId()})
+                .addRestriction({"schema_name": schema.getName(),"schema_version": schema.getVersion(),"issuer_did": credDef.getId()?.split(':')[0]})
+                .setNonRevoked(seconds_since_epoch(new Date()))
+    )
+    const proofRequestSent = await verifier.sendProofRequestV1(remoteInvitation.payload.connection_id as string, proofRequest)
+    await verifier.waitForPresentation(proofRequestSent.presentation_exchange_id)
+  }, shortTimeout);
   test("connectionless/present-proof-1.0/encoded-payload", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
     const proofRequest = new ProofRequestBuilder()

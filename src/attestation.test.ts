@@ -10,7 +10,7 @@ const stepTimeout = 999999999
 const shortTimeout = (2 * 60) * 1000
 
 import { setGlobalDispatcher, Agent } from 'undici';
-import { AriesAgent } from "./Agent";
+import { AriesAgent, ResponseCreateInvitationV1 } from "./Agent";
 import { AgentManual } from "./AgentManual";
 setGlobalDispatcher(new Agent({ connect: { timeout: 20_000 } }));
 
@@ -72,12 +72,12 @@ describe("AppAttestation", () => {
     const verifier = agentA
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await verifier.createInvitationToConnect()
+    const remoteInvitation = await verifier.createInvitationToConnect() as ResponseCreateInvitationV1
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
-    await verifier.waitForConnectionReady(remoteInvitation.connection_id)
-    logger.info(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    await verifier.waitForConnectionReady(remoteInvitation.payload.connection_id)
+    logger.info(`${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
 
     const proofRequest = new ProofRequestBuilder()
@@ -94,7 +94,7 @@ describe("AppAttestation", () => {
           ])
           .addRestriction({ "schema_name": schema.getName(), "schema_version": schema.getVersion(), "issuer_did": credDef.getId()?.split(':')[0] })
       )
-    const proofRequestSent: any = await verifier.sendProofRequestV1(remoteInvitation.connection_id, proofRequest)
+    const proofRequestSent: any = await verifier.sendProofRequestV1(remoteInvitation.payload.connection_id, proofRequest)
     logger.info('Proof Request Sent:', proofRequestSent)
     await verifier.waitForPresentation(proofRequestSent.presentation_exchange_id)
   }, shortTimeout);
