@@ -6,7 +6,7 @@ import { PersonCredential1, PersonSchemaV1_1 } from "./mocks";
 import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2, waitFor, withRedirectUrl } from "./lib";
 import pino from "pino";
 
-const stepTimeout = 999999999
+const stepTimeout = 120_000
 const shortTimeout = (2*60)*1000
 
 import { setGlobalDispatcher, Agent} from 'undici';
