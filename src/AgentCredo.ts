@@ -4,6 +4,7 @@ import {
   CredentialOfferRef,
   Invitation,
   ReceiveInvitationResponse,
+  ResponseCreateInvitation,
 } from "./Agent";
 import {
   Agent,
@@ -275,15 +276,15 @@ export class AgentCredo implements AriesAgent {
   createSchema(builder: SchemaBuilder): Promise<string | undefined> {
     throw new Error("Method not implemented.");
   }
-  createInvitationToConnect(): Promise<Invitation> {
+  createInvitationToConnect(): Promise<ResponseCreateInvitation> {
     throw new Error("Method not implemented.");
   }
   async receiveInvitation(
-    invitationRef: Invitation
+    inv: ResponseCreateInvitation
   ): Promise<ReceiveInvitationResponse> {
-    console.log(`Receiving invitation from ${invitationRef.invitation_url}`);
+    console.log(`Receiving invitation from ${inv.payload.invitation_url}`);
     const invitation = await this.agent?.oob.parseInvitation(
-      invitationRef.invitation_url
+      inv.payload.invitation_url
     );
     if (!invitation) {
       throw new Error("Could not parse invitation from URL");

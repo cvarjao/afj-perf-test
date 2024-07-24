@@ -10,7 +10,7 @@ const stepTimeout = 999999999
 const shortTimeout = (2*60)*1000
 
 import { setGlobalDispatcher, Agent} from 'undici';
-import { AriesAgent } from "./Agent";
+import { AriesAgent, ResponseCreateInvitationV1 } from "./Agent";
 import { AgentManual } from "./AgentManual";
 setGlobalDispatcher(new Agent({connect: { timeout: 20_000 }}));
 
@@ -58,18 +58,36 @@ describe("Mandatory", () => {
     const issuer = agentA
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await issuer.createInvitationToConnect()
+    const remoteInvitation = await issuer.createInvitationToConnect() as ResponseCreateInvitationV1
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
-    await issuer.waitForConnectionReady(remoteInvitation.connection_id)
-    logger.info(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    await issuer.waitForConnectionReady(remoteInvitation.payload.connection_id as string)
+    logger.info(`${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
-    const msgSent: any = await issuer.sendBasicMessage(remoteInvitation.connection_id, 'Hello')
+    const msgSent: any = await issuer.sendBasicMessage(remoteInvitation.payload.connection_id as string, 'Hello')
     logger.info('Message Sent:', msgSent)
     await waitFor(10_000)
     await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
-    const msgRcvd = await issuer.waitForBasicMessage(remoteInvitation.connection_id, Date.parse(msgSent.created_at as string), ["k", "ok"])
+    const msgRcvd = await issuer.waitForBasicMessage(remoteInvitation.payload.connection_id as string, Date.parse(msgSent.created_at as string), ["k", "ok"])
+    logger.info('Message Received:', msgRcvd)
+  }, shortTimeout);
+  test.skip("OOB/connected/messaging", async () => {
+    const issuer = agentA
+    const holder = agentB
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const remoteInvitation = await issuer.createOOBInvitationToConnect()
+    logger.info(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    logger.info(`waiting for issuer to accept connection`)
+    const {connection_id} =  await issuer.waitForOOBConnectionReady(remoteInvitation.payload.invi_msg_id)
+    logger.info(`${connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
+    const msgSent: any = await issuer.sendBasicMessage(connection_id, 'Hello')
+    logger.info('Message Sent:', msgSent)
+    await waitFor(10_000)
+    await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
+    const msgRcvd = await issuer.waitForBasicMessage(connection_id, Date.parse(msgSent.created_at as string), ["k", "ok"])
     logger.info('Message Received:', msgRcvd)
   }, shortTimeout);
   test("setup", async () => {
@@ -134,7 +152,7 @@ describe("Mandatory", () => {
       }
     }
     logger.info('remoteInvitation2', remoteInvitation2)
-    await verifier.waitForPresentationV2(remoteInvitation2.pres_ex_id)
+    await verifier.waitForPresentationV2(remoteInvitation2.payload.presentation_exchange_id as string)
   }, shortTimeout);
   test("connectionless/present-proof-2.0/url-redirect", async () => {
     const verifier = agentA
@@ -157,7 +175,7 @@ describe("Mandatory", () => {
         await holder.acceptProof({id: proofId})
       }
     }
-    await verifier.waitForPresentationV2(remoteInvitation2.pres_ex_id)
+    await verifier.waitForPresentationV2(remoteInvitation2.payload.presentation_exchange_id as string)
   }, shortTimeout);
   test("OOB/connectionless/present-proof-1.0/encoded-payload", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -199,7 +217,7 @@ describe("Mandatory", () => {
 
     const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest)
     logger.info('remoteInvitation3', remoteInvitation3)
-    logger.info(`Holder is receiving invitation for ${remoteInvitation3.presentation_exchange_id}`)
+    logger.info(`Holder is receiving invitation for ${remoteInvitation3.payload.presentation_exchange_id}`)
     const agentBConnectionRef3 = await holder.receiveInvitation(remoteInvitation3)
     logger.info('Holder is accepting proofs')
     //await waitFor(10000)
@@ -208,8 +226,8 @@ describe("Mandatory", () => {
         await holder.acceptProof({id: proofId})
       }
     }
-    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.presentation_exchange_id}`)
-    await verifier.waitForPresentationV2(remoteInvitation3.presentation_exchange_id)
+    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.payload.presentation_exchange_id}`)
+    await verifier.waitForPresentationV2(remoteInvitation3.payload.presentation_exchange_id  as string)
   }, shortTimeout);
   test("OOB/connectionless/present-proof-2.0/url-redirect", async () => {
     const verifier = agentA
@@ -227,7 +245,7 @@ describe("Mandatory", () => {
 
     const remoteInvitation3 = await withRedirectUrl(await verifier.sendOOBConnectionlessProofRequestV2(proofRequest))
     logger.info('remoteInvitation3', remoteInvitation3)
-    logger.info(`Holder is receiving invitation for ${remoteInvitation3.presentation_exchange_id}`)
+    logger.info(`Holder is receiving invitation for ${remoteInvitation3.payload.presentation_exchange_id}`)
     const agentBConnectionRef3 = await holder.receiveInvitation(remoteInvitation3)
     logger.info('Holder is accepting proofs')
     //await waitFor(10000)
@@ -236,7 +254,7 @@ describe("Mandatory", () => {
         await holder.acceptProof({id: proofId})
       }
     }
-    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.presentation_exchange_id}`)
-    await verifier.waitForPresentationV2(remoteInvitation3.presentation_exchange_id)
+    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.payload.presentation_exchange_id}`)
+    await verifier.waitForPresentationV2(remoteInvitation3.payload.presentation_exchange_id as string)
   }, shortTimeout);
 });

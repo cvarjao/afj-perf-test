@@ -1,4 +1,4 @@
-import { AcceptProofArgs, AriesAgent, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
+import { AcceptProofArgs, AriesAgent, CredentialOfferRef, Invitation, ReceiveInvitationResponse, ResponseCreateInvitation } from "./Agent";
 import { Logger } from "@credo-ts/core";
 import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import QRCode from 'qrcode'
@@ -28,7 +28,7 @@ export class AgentManual implements AriesAgent {
   waitForPresentation(presentation_exchange_id: string): Promise<void> {
     throw new Error("Method not implemented.");
   }
-  sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<string | undefined> {
+  sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<ResponseCreateInvitation> {
     throw new Error("Method not implemented.");
   }
     async acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
@@ -43,18 +43,18 @@ export class AgentManual implements AriesAgent {
     createSchema(builder: SchemaBuilder): Promise<string | undefined> {
         throw new Error("Method not implemented.");
     }
-    createInvitationToConnect(): Promise<Invitation> {
+    createInvitationToConnect(): Promise<ResponseCreateInvitation> {
         throw new Error("Method not implemented.");
     }
-    async receiveInvitation(invitationRef: Invitation): Promise<ReceiveInvitationResponse> {
+    async receiveInvitation(ref: ResponseCreateInvitation): Promise<ReceiveInvitationResponse> {
       const relativePath = './tmp/__qrcode.png'
       const QRCodePath = path.resolve(process.cwd() as string, relativePath)
       fs.mkdirSync(path.dirname(QRCodePath), { recursive: true })
-      fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), invitationRef.invitation_url)
-      fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((invitationRef as any)))
+      fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), ref.payload.invitation_url)
+      fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((ref.payload.invitation as any)))
       await QRCode.toFile(
             QRCodePath,
-            invitationRef.invitation_url,
+            ref.payload.invitation_url,
             {margin: 10}
       )
       log(chalk.yellowBright(`> Scan QR Code image from ${relativePath}`))

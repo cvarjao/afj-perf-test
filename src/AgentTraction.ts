@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { AcceptProofArgs, AriesAgent, CredentialOfferRef, Invitation, ReceiveInvitationResponse } from "./Agent";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { Logger } from "@credo-ts/core";
 
@@ -46,7 +46,29 @@ export class AgentTraction implements AriesAgent {
             }
         })
     }
-    
+    async _waitForOOBConnectionRecord (invitation_msg_id:string, counter: number): Promise<ConnectionRef> {
+        return this.axios.get(`/connections`, {
+            params: {
+                invitation_msg_id: invitation_msg_id
+            },
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then((value)=>{
+            const results = value.data.results as any[]
+            if (results.length == 0) {
+                return new Promise ((resolve) => {
+                    setTimeout(() => {
+                        resolve(this._waitForOOBConnectionRecord(invitation_msg_id, counter + 1))
+                    }, 2000);
+                })
+            }
+            return results[0] as ConnectionRef
+        })
+    }    
     async _waitForConnectionReady (connection_id:string, counter: number) {
         await this.axios.get(`/connections/${connection_id}`, {
             headers:{
@@ -232,7 +254,7 @@ export class AgentTraction implements AriesAgent {
         .then(extractResponseData)
     }
 
-    async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+    async sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV2> {
         const proof = await this.createPresentProofV1(builder)
         const create_invitation_payload = {
             "attachments": [
@@ -260,9 +282,18 @@ export class AgentTraction implements AriesAgent {
         this.logger.info('OOB_invitation', invitation)
         delete invitation.invitation.handshake_protocols
         invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
-        return {...invitation, presentation_exchange_id:proof["presentation_exchange_id"]}
+        
+        return  {
+            type: "didexchange/1.0",
+            payload: {
+                invitation: invitation.invitation,
+                invitation_url: invitation.invitation_url,
+                presentation_exchange_id:proof.presentation_exchange_id,
+                invi_msg_id: invitation.invi_msg_id
+            }
+        }
     }
-    async sendOOBConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<any | undefined> {
+    async sendOOBConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV2> {
         const proof = await this.createPresentProofV2(builder)
         const create_invitation_payload = {
             "attachments": [
@@ -290,9 +321,18 @@ export class AgentTraction implements AriesAgent {
         this.logger.info('OOB_invitation', invitation)
         delete invitation.invitation.handshake_protocols
         invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
-        return {...invitation, presentation_exchange_id:proof["pres_ex_id"]}
+        //return {...invitation, presentation_exchange_id:proof["pres_ex_id"]}
+        return  {
+            type: "didexchange/1.0",
+            payload: {
+                invitation: invitation.invitation,
+                invitation_url: invitation.invitation_url,
+                presentation_exchange_id: proof.pres_ex_id,
+                invi_msg_id: invitation.invi_msg_id
+            }
+        }
     }
-    async sendConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<any | undefined> {
+    async sendConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV1> {
         const proofRequest = builder.build()
         const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
             params: {},
@@ -315,10 +355,17 @@ export class AgentTraction implements AriesAgent {
         return Promise.resolve(invitation).then(value => {
             const baseUrl = 'bcwallet://launch'
             const invitation_url = baseUrl+'?c_i='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
-            return {invitation: value, pres_ex_id: proof.pres_ex_id, invitation_url}
+            return {
+                type: "connections/1.0",
+                payload: {
+                    invitation: value,
+                    presentation_exchange_id: proof.pres_ex_id,
+                    invitation_url
+                }
+            }
         })
     }
-    async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+    async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV1> {
         const proofRequest = builder.build()
         const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
             params: {},
@@ -341,7 +388,14 @@ export class AgentTraction implements AriesAgent {
         return Promise.resolve(invitation).then(value => {
             const baseUrl = 'bcwallet://launch'
             const invitation_url = baseUrl+'?oob='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
-            return {invitation: value, presentation_exchange_id: proof.presentation_exchange_id, invitation_url}
+            return {
+                type: "connections/1.0",
+                payload: {
+                    invitation: value,
+                    presentation_exchange_id: proof.presentation_exchange_id,
+                    invitation_url
+                }
+            }
         })
     }
     async sendProofRequestV1(connection_id: string, proofRequestbuilder: ProofRequestBuilder): Promise<any> {
@@ -369,7 +423,7 @@ export class AgentTraction implements AriesAgent {
     acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    receiveInvitation(invitation: Invitation): Promise<ReceiveInvitationResponse> {
+    receiveInvitation(invitation: ResponseCreateInvitation): Promise<ReceiveInvitationResponse> {
         throw new Error("Method not implemented.");
     }
     async createSchemaCredDefinition(credDefBuilder: CredentialDefinitionBuilder): Promise<string | undefined> {
@@ -467,7 +521,44 @@ export class AgentTraction implements AriesAgent {
             })
         }
     }
-    async createInvitationToConnect(): Promise<Invitation> {
+    async createOOBInvitationToConnect(): Promise<ResponseCreateInvitationV2> {
+        const config = this.config
+        const http = this.axios
+        return http.post(`/out-of-band/create-invitation`,{
+            "accept":["didcomm/aip1","didcomm/aip2;env=rfc19"],
+            "alias":`Faber\`s 😇 - ${new Date().getTime()}`,
+            "goal":"",
+            "goal_code":"",
+            "handshake_protocols":["https://didcomm.org/didexchange/1.0","https://didcomm.org/connections/1.0"],
+            "my_label":`Faber\`s 😇 - ${new Date().getTime()}`,
+            "protocol_version":"1.1",
+            "use_public_did":false,
+        }, {
+            params: {
+                "auto_accept": true,
+                "multi_use": false,
+                "create_unique_did": false,
+            },
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${config.auth_token}`
+            }
+        })
+        .then(printResponse)
+        .then((value)=>{
+            this.logger.info('createInvitationToConnect', value.data)
+            this.logger.info(`invitation_url=${value.data.invitation_url}`)
+            return {
+                type: "didexchange/1.0",
+                payload: {
+                    invitation_url: value.data.invitation_url,
+                    invi_msg_id: value.data.invi_msg_id,
+                    invitation: value.data.invitation,
+                }
+            }
+        })
+    }
+    async createInvitationToConnect(): Promise<ResponseCreateInvitation> {
         const config = this.config
         const http = this.axios
         return http.post(`/connections/create-invitation`,{
@@ -480,9 +571,17 @@ export class AgentTraction implements AriesAgent {
             }
         })
         .then((value)=>{
+            const response:ResponseCreateInvitationV1 = {
+                type:"connections/1.0",
+                payload: {
+                    invitation_url: value.data.invitation_url,
+                    connection_id: value.data.connection_id,
+                    invitation: value.data.invitation
+                }
+            }
             this.logger.info('createInvitationToConnect', value.data)
             this.logger.info(`invitation_url=${value.data.invitation_url}`)
-            return {invitation_url: value.data.invitation_url, connection_id: value.data.connection_id}
+            return response //{invitation_url: value.data.invitation_url, connection_id: value.data.connection_id}
         })
     }
     async createSchema(schemaBuilder: SchemaBuilder): Promise<string | undefined> {
@@ -545,6 +644,11 @@ export class AgentTraction implements AriesAgent {
             this.logger.info(`Credential offer sent!  ${credential_exchange_id}`)
             return credential_exchange_id
         })
+    }
+    async waitForOOBConnectionReady (invi_msg_id:string): Promise<ConnectionRef> {
+        const {connection_id} = await this._waitForOOBConnectionRecord(invi_msg_id, 0)
+        await this.waitForConnectionReady(connection_id)
+        return {connection_id}
     }
     async waitForConnectionReady (connection_id:string) {
         this.logger.info(`Waiting for connection ${connection_id} to get stablished`)

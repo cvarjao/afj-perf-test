@@ -5,7 +5,7 @@ import querystring from 'querystring';
 import { BaseLogger, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
 import { Logger } from 'pino';
 import { AgentTraction } from './AgentTraction';
-import { AriesAgent } from './Agent';
+import { AriesAgent, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from './Agent';
 import fs from 'node:fs';
 import path from 'node:path';
 import { log, dir} from "console"
@@ -799,14 +799,14 @@ export class Context {
 
 export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, cred: PersonCredential1)  => {
     const { logger } = issuer
-    const remoteInvitation = await issuer.createInvitationToConnect()
+    const remoteInvitation = await issuer.createInvitationToConnect() as ResponseCreateInvitationV1
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
-    await issuer.waitForConnectionReady(remoteInvitation.connection_id)
-    logger.info(`${remoteInvitation.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    await issuer.waitForConnectionReady(remoteInvitation.payload.connection_id as string)
+    logger.info(`${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
-    const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, remoteInvitation.connection_id)
+    const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, remoteInvitation.payload.connection_id as string)
     const offer = await holder.findCredentialOffer(agentBConnectionRef1.connectionRecord?.connection_id as string)
     await holder.acceptCredentialOffer(offer)
     await issuer.waitForOfferAccepted(credential_exchange_id as string)
@@ -817,7 +817,7 @@ export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, 
  */
 export const verifyCredentialA1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
     const { logger } = verifier
-    const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
+    const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest) as ResponseCreateInvitationV1
     const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
     //console.dir(['agentBConnectionRef', agentBConnectionRef2])
     if (agentBConnectionRef2.invitationRequestsThreadIds){
@@ -860,24 +860,21 @@ export const verifyCredentialA1 = async (verifier:AriesAgent, holder: AriesAgent
         await holder.acceptProof({id: proofId})
       }
     }
-    await verifier.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+    await verifier.waitForPresentation(remoteInvitation2.payload.presentation_exchange_id as string)
   }
 /**
  * Connectionless (Connection/v1) with http request
  */
 export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
-    const remoteInvitation2 = await verifier.sendConnectionlessProofRequest(proofRequest)
-    const invitationFile = `${remoteInvitation2.invitation['@id']}.json`
-    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation2.invitation, undefined, 2))
-    const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
-    const agentBConnectionRef2 = await holder.receiveInvitation({invitation_url: `${publicUrl}/${invitationFile}`, connection_id: ''})
+    const remoteInvitation2 = await withRedirectUrl(await verifier.sendConnectionlessProofRequest(proofRequest)) as ResponseCreateInvitationV1
+    const agentBConnectionRef2 = await holder.receiveInvitation(remoteInvitation2)
     //console.dir(['agentBConnectionRef', agentBConnectionRef2])
     if (agentBConnectionRef2.invitationRequestsThreadIds){
       for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
         await holder.acceptProof({id: proofId})
       }
     }
-    await verifier.waitForPresentation(remoteInvitation2.presentation_exchange_id)
+    await verifier.waitForPresentation(remoteInvitation2.payload.presentation_exchange_id as string)
   }
 
   /**
@@ -885,9 +882,9 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
    */
   export const verifyCredentialB1 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
     const { logger } = verifier
-    const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
+    const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest) as ResponseCreateInvitationV2
     logger.info('remoteInvitation3', remoteInvitation3)
-    logger.info(`Holder is receiving invitation for ${remoteInvitation3.presentation_exchange_id}`)
+    logger.info(`Holder is receiving invitation for ${remoteInvitation3.payload.presentation_exchange_id}`)
     const agentBConnectionRef3 =await holder.receiveInvitation(remoteInvitation3)
     logger.info('Holder is accepting proofs')
     //await waitFor(10000)
@@ -896,8 +893,8 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
         await holder.acceptProof({id: proofId})
       }
     }
-    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.presentation_exchange_id}`)
-    await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
+    logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.payload.presentation_exchange_id}`)
+    await verifier.waitForPresentation(remoteInvitation3.payload.presentation_exchange_id as string)
   }
   
   /**
@@ -905,13 +902,10 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
    */
   export const verifyCredentialB2 = async (verifier:AriesAgent, holder: AriesAgent, proofRequest: ProofRequestBuilder)  => {
     const { logger } = verifier
-    const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequest(proofRequest)
+    const remoteInvitation3 = await withRedirectUrl(await verifier.sendOOBConnectionlessProofRequest(proofRequest)) as ResponseCreateInvitationV2
     logger.info('remoteInvitation3', remoteInvitation3)
-    const invitationFile = `${remoteInvitation3.invitation['@id']}.json`
-    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.invitation, undefined, 2))
-    const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
     logger.info('Holder is receiving invitation')
-    const agentBConnectionRef3 =await holder.receiveInvitation({invitation_url: `${publicUrl}/${invitationFile}`, connection_id: ''})
+    const agentBConnectionRef3 =await holder.receiveInvitation(remoteInvitation3)
     logger.info('Holder is accepting proofs')
     if (agentBConnectionRef3.invitationRequestsThreadIds){
       for (const proofId of agentBConnectionRef3.invitationRequestsThreadIds) {
@@ -919,12 +913,13 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
       }
     }
     logger.info('Verifier is waiting for proofs')
-    await verifier.waitForPresentation(remoteInvitation3.presentation_exchange_id)
+    await verifier.waitForPresentation(remoteInvitation3.payload.presentation_exchange_id as string)
   }
-  export const withRedirectUrl = async (remoteInvitation3: any): Promise<any> => {
-    const invitationFile = `${remoteInvitation3.invitation['@id']}.json`
-    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.invitation, undefined, 2))
+  export const withRedirectUrl = async (remoteInvitation3: ResponseCreateInvitation): Promise<ResponseCreateInvitation> => {
+    const invitationFile = `${remoteInvitation3.payload.invitation['@id']}.json`
+    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.payload.invitation, undefined, 2))
     const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
-    remoteInvitation3.invitation_url = `${publicUrl}/${invitationFile}`
+    remoteInvitation3.payload.invitation_url = `${publicUrl}/${invitationFile}`
+
     return remoteInvitation3
   }
