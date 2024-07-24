@@ -2,8 +2,8 @@ import { describe, test } from "@jest/globals";
 import { AgentTraction } from "./AgentTraction";
 import { AgentCredo } from "./AgentCredo";
 import { LogLevel } from "@credo-ts/core";
-import { PersonCredential1, PersonSchemaV1_1 } from "./mocks";
-import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, SchemaBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2, waitFor } from "./lib";
+import { PersonCredential1 } from "./mocks";
+import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, SchemaBuilder } from "./lib";
 import pino from "pino";
 
 const stepTimeout = 999999999
@@ -30,7 +30,9 @@ export const loggerTransport = pino.transport({
 describe("AppAttestation", () => {
   const _logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
   const logger = new PinoLogger(_logger, LogLevel.trace)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const config = require("../local.env.json")["sovrin_testnet"];
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ledgers = require("../ledgers.json");
   const agentA = new AgentTraction(config, logger);
   //const agentB: AriesAgent = new AgentManual(config, new ConsoleLogger(LogLevel.trace))

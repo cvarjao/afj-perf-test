@@ -2,7 +2,6 @@ import {
   AcceptProofArgs,
   AriesAgent,
   CredentialOfferRef,
-  Invitation,
   ReceiveInvitationResponse,
   ResponseCreateInvitation,
 } from "./Agent";
@@ -50,8 +49,9 @@ import {
 } from "./lib";
 import { IndyVdrPoolConfig } from "@credo-ts/indy-vdr";
 import { OutOfBandRecord } from "@credo-ts/core";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
+import { homedir, tmpdir } from "node:os"
 
 const createLinkSecretIfRequired = async (agent: Agent) => {
   // If we don't have any link secrets yet, we will create a
@@ -134,7 +134,7 @@ export const createAgent = async (
   //const wallet = agent.dependencyManager.resolve(InjectionSymbols.Wallet) as AskarWallet
   //console.dir(wallet)
   try {
-    fs.rmSync(path.join(require("node:os").homedir(), ".afj"), {
+    fs.rmSync(path.join(homedir(), ".afj"), {
       recursive: true,
       force: true,
     });
@@ -142,7 +142,7 @@ export const createAgent = async (
     console.log(error);
   }
   try {
-    fs.rmSync(path.join(require("node:os").tmpdir(), ".afj"), {
+    fs.rmSync(path.join(tmpdir(), ".afj"), {
       recursive: true,
       force: true,
     });
@@ -224,15 +224,15 @@ export class AgentCredo implements AriesAgent {
     return this.agent.basicMessages.sendMessage(connection_id, content)
   }
   sendOOBConnectionlessProofRequest(
-    builder: ProofRequestBuilder
+    _builder: ProofRequestBuilder
   ): Promise<any | undefined> {
     throw new Error("Method not implemented.");
   }
-  waitForPresentation(presentation_exchange_id: string): Promise<void> {
+  waitForPresentation(_presentation_exchange_id: string): Promise<void> {
     throw new Error("Method not implemented.");
   }
   sendConnectionlessProofRequest(
-    builder: ProofRequestBuilder
+    _builder: ProofRequestBuilder
   ): Promise<any | undefined> {
     throw new Error("Method not implemented.");
   }
@@ -269,11 +269,11 @@ export class AgentCredo implements AriesAgent {
     return { id: cred.id, connection_id: cred.connectionId as string };
   }
   createSchemaCredDefinition(
-    credDefBuilder: CredentialDefinitionBuilder
+    _credDefBuilder: CredentialDefinitionBuilder
   ): Promise<string | undefined> {
     throw new Error("Method not implemented.");
   }
-  createSchema(builder: SchemaBuilder): Promise<string | undefined> {
+  createSchema(_builder: SchemaBuilder): Promise<string | undefined> {
     throw new Error("Method not implemented.");
   }
   createInvitationToConnect(): Promise<ResponseCreateInvitation> {
@@ -330,11 +330,5 @@ export class AgentCredo implements AriesAgent {
   public async shutdown() {
     await this.agent?.mediationRecipient?.stopMessagePickup();
     await this.agent?.shutdown();
-    for (const t of this.agent?.outboundTransports) {
-      await t.stop();
-    }
-    for (const t of this.agent?.inboundTransports) {
-      await t.stop();
-    }
   }
 }

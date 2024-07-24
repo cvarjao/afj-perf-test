@@ -1,4 +1,4 @@
-import { AcceptProofArgs, AriesAgent, CredentialOfferRef, Invitation, ReceiveInvitationResponse, ResponseCreateInvitation } from "./Agent";
+import { AcceptProofArgs, AriesAgent, CredentialOfferRef, ReceiveInvitationResponse, ResponseCreateInvitation } from "./Agent";
 import { Logger } from "@credo-ts/core";
 import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import QRCode from 'qrcode'
@@ -14,33 +14,33 @@ export class AgentManual implements AriesAgent {
         this.config = config
         this.logger = logger
     }
-  sendBasicMessage(connection_id: string, content: string): Promise<any> {
+  sendBasicMessage(_connection_id: string, content: string): Promise<any> {
     log(chalk.yellowBright(`> Send a message with '${content}' as content`))
     return Promise.resolve()
   }
-  sendOOBConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<any | undefined> {
+  sendOOBConnectionlessProofRequest(_builder: ProofRequestBuilder): Promise<any | undefined> {
     throw new Error("Method not implemented.");
   }
-  acceptProof(proof: AcceptProofArgs): Promise<void> {
+  acceptProof(_proof: AcceptProofArgs): Promise<void> {
     //throw new Error("Method not implemented.");
     return Promise.resolve()
   }
-  waitForPresentation(presentation_exchange_id: string): Promise<void> {
+  waitForPresentation(_presentation_exchange_id: string): Promise<void> {
     throw new Error("Method not implemented.");
   }
-  sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<ResponseCreateInvitation> {
+  sendConnectionlessProofRequest(_builder: ProofRequestBuilder): Promise<ResponseCreateInvitation> {
     throw new Error("Method not implemented.");
   }
-    async acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
+    async acceptCredentialOffer(_offer: CredentialOfferRef): Promise<void> {
       console.warn('Accept Credential')
     }
     async findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
       return {id: 'undefined', connection_id: connectionId}
     }
-    createSchemaCredDefinition(credDefBuilder: CredentialDefinitionBuilder): Promise<string | undefined> {
+    createSchemaCredDefinition(_credDefBuilder: CredentialDefinitionBuilder): Promise<string | undefined> {
       throw new Error("Method not implemented.");
     }
-    createSchema(builder: SchemaBuilder): Promise<string | undefined> {
+    createSchema(_builder: SchemaBuilder): Promise<string | undefined> {
         throw new Error("Method not implemented.");
     }
     createInvitationToConnect(): Promise<ResponseCreateInvitation> {

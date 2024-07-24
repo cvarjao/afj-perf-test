@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from "axios";
-import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, Invitation, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { Logger } from "@credo-ts/core";
 
@@ -25,7 +25,7 @@ export class AgentTraction implements AriesAgent {
         //throw new Error("Method not implemented.");
         return Promise.resolve()
     }
-    acceptProof(proof: AcceptProofArgs): Promise<void> {
+    acceptProof(_proof: AcceptProofArgs): Promise<void> {
         throw new Error("Method not implemented.");
     }
     async waitForLedgerTransactionAcked ( txn_id:string, counter: number) {
@@ -333,7 +333,6 @@ export class AgentTraction implements AriesAgent {
         }
     }
     async sendConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV1> {
-        const proofRequest = builder.build()
         const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
             params: {},
             headers:{
@@ -366,7 +365,6 @@ export class AgentTraction implements AriesAgent {
         })
     }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV1> {
-        const proofRequest = builder.build()
         const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
             params: {},
             headers:{
@@ -417,13 +415,13 @@ export class AgentTraction implements AriesAgent {
         .then(printResponse)
         .then(extractResponseData)
       }
-    findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
+    findCredentialOffer(_connectionId: string): Promise<CredentialOfferRef> {
         throw new Error("Method not implemented.");
     }
-    acceptCredentialOffer(offer: CredentialOfferRef): Promise<void> {
+    acceptCredentialOffer(_offer: CredentialOfferRef): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    receiveInvitation(invitation: ResponseCreateInvitation): Promise<ReceiveInvitationResponse> {
+    receiveInvitation(_invitation: ResponseCreateInvitation): Promise<ReceiveInvitationResponse> {
         throw new Error("Method not implemented.");
     }
     async createSchemaCredDefinition(credDefBuilder: CredentialDefinitionBuilder): Promise<string | undefined> {
@@ -525,14 +523,15 @@ export class AgentTraction implements AriesAgent {
         const config = this.config
         const http = this.axios
         return http.post(`/out-of-band/create-invitation`,{
-            "accept":["didcomm/aip1","didcomm/aip2;env=rfc19"],
+            //"accept":["didcomm/aip1","didcomm/aip2;env=rfc19"],
             "alias":`Faber\`s 😇 - ${new Date().getTime()}`,
-            "goal":"",
-            "goal_code":"",
-            "handshake_protocols":["https://didcomm.org/didexchange/1.0","https://didcomm.org/connections/1.0"],
+            //"goal":"",
+            //"goal_code":"",
+            "handshake_protocols":["https://didcomm.org/didexchange/1.1"],
             "my_label":`Faber\`s 😇 - ${new Date().getTime()}`,
             "protocol_version":"1.1",
-            "use_public_did":false,
+            //"use_public_did":false,
+            "use_did_method": "did:peer:4",
         }, {
             params: {
                 "auto_accept": true,

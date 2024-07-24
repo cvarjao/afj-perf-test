@@ -1,7 +1,7 @@
 import axios from 'axios'
 import fs from 'node:fs'
 import path from 'node:path'
-import { extractResponseData, printResponse, waitFor } from './lib';
+import { extractResponseData, waitFor } from './lib';
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -128,13 +128,9 @@ const run = async () => {
     , {headers: {"Authorization": `Bearer ${checkin.token}`}})
   .then((response) => {return response.data})
 
-  let transactions: any[]
-  const allTransacionsAcked = (transactions:any[]) => {
-    //transactions.filter()
-  }
   let maxTransactionsChecks = 40
   while (maxTransactionsChecks>0) {
-    transactions = await checkTransactions(baseUrl,checkin.token )
+    await checkTransactions(baseUrl,checkin.token )
     waitFor(2000)
     maxTransactionsChecks--
   }

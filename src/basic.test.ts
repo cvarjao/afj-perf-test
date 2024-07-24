@@ -30,7 +30,9 @@ export const loggerTransport = pino.transport({
 describe("Mandatory", () => {
   const _logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
   const logger = new PinoLogger(_logger, LogLevel.trace)
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const config = require("../local.env.json")["sovrin_testnet"];
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ledgers = require("../ledgers.json");
   const agentA = new AgentTraction(config, logger);
   //const agentB: AriesAgent = new AgentManual(config, new ConsoleLogger(LogLevel.trace))
@@ -85,7 +87,6 @@ describe("Mandatory", () => {
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
     const msgSent: any = await issuer.sendBasicMessage(connection_id, 'Hello')
     logger.info('Message Sent:', msgSent)
-    await waitFor(10_000)
     await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
     const msgRcvd = await issuer.waitForBasicMessage(connection_id, Date.parse(msgSent.created_at as string), ["k", "ok"])
     logger.info('Message Received:', msgRcvd)

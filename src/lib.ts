@@ -1,7 +1,5 @@
-import { readFileSync } from 'fs'
-import axios, {isCancel, AxiosError, AxiosInstance} from 'axios';
+import axios, {AxiosInstance} from 'axios';
 import { PersonCredential1 } from './mocks';
-import querystring from 'querystring';
 import { BaseLogger, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
 import { Logger } from 'pino';
 import { AgentTraction } from './AgentTraction';
@@ -67,9 +65,9 @@ const sanitize = (obj: any) => {
 export const waitFor = (ms:number) => {
     return new Promise ((resolve) => {setTimeout(() => {resolve(true)}, ms);})
 }
-function randomString(length: number) {
+function _randomString(length: number) {
     // Declare all characters
-    let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
     // Pick characers randomly
     let str = '';
@@ -317,7 +315,7 @@ export class ProofRequestBuilder {
         })
     }
 }
-export const createPersonSchema =  async (config: any, state: any, schemaBuilder: SchemaBuilder) => {
+export const createPersonSchema =  async (config: any, _state: any, schemaBuilder: SchemaBuilder) => {
     const schema = schemaBuilder.build()
     const schemas = await axios.get(`${config.base_url}/schemas/created`, {
         params:{schema_name: schema.schema_name, schema_version: schema.schema_version},
@@ -346,7 +344,7 @@ export const createPersonSchema =  async (config: any, state: any, schemaBuilder
     }
 }
 
-export const createPersonSchemaCredDefinition =  async (config:any, state:any, credDefBuilder: CredentialDefinitionBuilder) => {
+export const createPersonSchemaCredDefinition =  async (config:any, _state:any, credDefBuilder: CredentialDefinitionBuilder) => {
     const schemas = await axios.get(`${config.base_url}/credential-definitions/created`, {
         params:{schema_name: credDefBuilder.getSchema()?.getName(), schema_version: credDefBuilder.getSchema()?.getVersion()},
         headers:{
@@ -397,7 +395,7 @@ export const createPersonSchemaCredDefinition =  async (config:any, state:any, c
     }
 }
 
-export const createAuthToken =  async (config: any, state: any) => {
+export const createAuthToken =  async (config: any, _state: any) => {
     if (config.tenant_id && config.api_key) {
         await axios.post(`${config.base_url}/multitenancy/tenant/${config.tenant_id}/token`,{"api_key":config.api_key})
         .then((value)=>{
@@ -411,7 +409,7 @@ export const createAuthToken =  async (config: any, state: any) => {
     }
 }
 
-export const createInvitationToConnect = async (ctx:Context, state:any) => {
+export const createInvitationToConnect = async (ctx:Context, _state:any) => {
     const config = ctx.config
     const http = ctx.axios
     return http.post(`/connections/create-invitation`,{
@@ -433,7 +431,7 @@ export const createInvitationToConnect = async (ctx:Context, state:any) => {
     })
 }
 
-export const acceptInvitationToConnect = async (config: any, state: any) => {
+export const acceptInvitationToConnect = async (config: any, _state: any) => {
     await axios.post(`${config.base_url}/connections/receive-invitation`,config.current_invitation, {
         params: {
             "alias": "Alice",
@@ -443,7 +441,7 @@ export const acceptInvitationToConnect = async (config: any, state: any) => {
             'Authorization': `Bearer ${config.auth_token}`
         }
     })
-    .then((value)=>{
+    .then((_value)=>{
         console.log('Acceppted connection')
         //console.dir(value.data)
     })
@@ -543,7 +541,7 @@ export const waitForOfferAccepted = async (config: any, state: any, cred: IssueC
     })
 }
 
-export const sendPersonCredential = async (ctx: Context, state: any, cred: IssueCredentialPreviewV1) => {
+export const sendPersonCredential = async (ctx: Context, _state: any, cred: IssueCredentialPreviewV1) => {
     //const image =  await Jimp.read(path.join(__dirname, 'assets/photo.jpeg')).then((image)=> {return image.scale(1.5)}).then(image=>{return image.getBase64Async(image.getMIME())})
     //const photoValue = image
     //const photoValueSize = Buffer.byteLength(photoValue)
@@ -585,7 +583,7 @@ export const extractResponseData = (response: any) => {
     return response.data
 }
 
-export const sendProofRequest = async (config: any, state: any, proofRequest: ProofRequestBuilder) => {
+export const sendProofRequest = async (config: any, _state: any, proofRequest: ProofRequestBuilder) => {
     await axios.post(`${config.base_url}/present-proof/send-request`,{
         "trace": false,
         "auto_verify": false,

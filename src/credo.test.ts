@@ -4,7 +4,7 @@ import { ConsoleLogger, LogLevel } from "@credo-ts/core";
 type AgentType = Awaited<ReturnType<typeof createAgent>>
 
 describe.skip("credo", () => {
-  const config = require("../local.env.json")["sovrin_testnet"];
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ledgers = require("../ledgers.json");
   let agent: AgentType;
   
