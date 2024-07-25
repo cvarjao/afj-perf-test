@@ -12,7 +12,9 @@ export type ConnectionRef = {connection_id: string}
 export type Invitation = {invitation_url: string} & ConnectionRef
 export type CredentialOfferRef = {id: string} & ConnectionRef
 
-export type AcceptProofArgs = {id: string}
+export type HasId = {id: string}
+export type HadConnectionId = {connection_id: string}
+export type AcceptProofArgs = HasId | HadConnectionId
 export type ReceiveInvitationResponse = { outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRef, invitationRequestsThreadIds?: string[] }
 export interface AriesAgent {
     readonly logger: Logger

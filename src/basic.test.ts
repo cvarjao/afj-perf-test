@@ -92,15 +92,79 @@ describe("Mandatory", () => {
         req.data.cred_def_id = '{cred_def_id}'
       }
       if (req.method === 'post' && req.url === '/issue-credential/send-offer' && req.data) {
-        req.data.credential_preview = '--redacted--'
+        req.data.credential_preview = '{--redacted--}'
         req.data.cred_def_id = '{cred_def_id}'
         req.data.connection_id = '{connection_id}'
       }
       if (req.method === 'post' && req.url === '/present-proof/create-request' && req.data) {
-        req.data.proof_request = '--redacted--'
+        req.data.proof_request = '{--redacted--}'
+      }
+      if (req.method === 'post' && req.url === '/out-of-band/create-invitation' && req.data?.attachments) {
+        //req.data.attachments = '--redacted--'
+        for (const attachment of req.data.attachments) {
+          if (attachment?.id){
+            attachment.id = '--redacted--'
+          }
+          if (attachment.data?.json){
+            if (attachment?.data?.id){
+              attachment.data.id = '--redacted--'
+            }
+            if (attachment?.data?.json?.id){
+              attachment.data.json.id = '--redacted--'
+            }
+            if (attachment.data?.json?.thread_id) {
+              attachment.data.json.thread_id = '--redacted--'
+            }
+            if (attachment.data?.json?.created_at){
+              attachment.data.json.created_at = '--redacted--'
+            }
+            if (attachment.data?.json?.updated_at){
+              attachment.data.json.updated_at = '--redacted--'
+            }
+            if (attachment.data?.json?.presentation_exchange_id) {
+              attachment.data.json.presentation_exchange_id = '--redacted--'
+            }
+            if (attachment.data?.json?.pres_ex_id) {
+              attachment.data.json.pres_ex_id = '--redacted--'
+            }
+            if (attachment.data?.json?.presentation_request) {
+              attachment.data.json.presentation_request = '{--redacted--}'
+            }
+            if (attachment.data?.json?.presentation_request_dict) {
+              attachment.data.json.presentation_request_dict = '{--redacted--}'
+            }
+            if (attachment.data?.json?.by_format?.pres_request?.indy) {
+              attachment.data.json.by_format.pres_request.indy.nonce = '--redacted--'
+              const requested_attributes = attachment.data?.json?.by_format.pres_request?.indy?.requested_attributes
+              if (requested_attributes){
+                for (const key in requested_attributes) {
+                  if (Object.prototype.hasOwnProperty.call(requested_attributes, key)) {
+                    const item = requested_attributes[key];
+                    if (item.non_revoked?.from) {
+                      item.non_revoked.from = '--redacted--'
+                    }
+                    if (item.non_revoked?.to) {
+                      item.non_revoked.to = '--redacted--'
+                    }
+                    if (item.restrictions) {
+                      for (const restriction of item.restrictions) {
+                        if (restriction.issuer_did) {
+                          restriction.issuer_did = '--redacted--'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            if (attachment.data?.json?.pres_request) {
+              attachment.data.json.pres_request = '{--redacted--}'
+            }
+          }
+        }
       }
       if (req.method === 'post' && req.url === '/present-proof-2.0/create-request' && req.data) {
-        req.data.presentation_request = '--redacted--'
+        req.data.presentation_request = '{--redacted--}'
       }
       if (req.method === 'post' && req.url === '/connections/{connection_id}' && req.data?.my_label) {
         const regex = /(- \d+$)/mg;
@@ -201,6 +265,7 @@ describe("Mandatory", () => {
                 .setNonRevoked(seconds_since_epoch(new Date()))
     )
     const proofRequestSent = await verifier.sendProofRequestV1(remoteInvitation.payload.connection_id as string, proofRequest)
+    holder.acceptProof({connection_id:agentBConnectionRef1.connectionRecord?.connection_id as string})
     await verifier.waitForPresentation(proofRequestSent.presentation_exchange_id)
     expect(requests).toMatchSnapshot();
   }, shortTimeout);
@@ -277,6 +342,7 @@ describe("Mandatory", () => {
       }
     }
     await verifier.waitForPresentationV2(remoteInvitation2.payload.presentation_exchange_id as string)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("OOB/connectionless/present-proof-1.0/encoded-payload", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -301,6 +367,7 @@ describe("Mandatory", () => {
                 .setNonRevoked(seconds_since_epoch(new Date()))
     )
     await verifyCredentialB2(agentA, agentB, proofRequest)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("OOB/connectionless/present-proof-2.0/encoded-payload", async () => {
     const verifier = agentA
@@ -329,6 +396,7 @@ describe("Mandatory", () => {
     }
     logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.payload.presentation_exchange_id}`)
     await verifier.waitForPresentationV2(remoteInvitation3.payload.presentation_exchange_id  as string)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("OOB/connectionless/present-proof-2.0/url-redirect", async () => {
     const verifier = agentA
@@ -357,5 +425,6 @@ describe("Mandatory", () => {
     }
     logger.info(`Verifier is waiting for proofs: ${remoteInvitation3.payload.presentation_exchange_id}`)
     await verifier.waitForPresentationV2(remoteInvitation3.payload.presentation_exchange_id as string)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
 });

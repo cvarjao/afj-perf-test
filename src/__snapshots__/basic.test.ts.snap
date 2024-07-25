@@ -1,5 +1,274 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Mandatory OOB/connectionless/present-proof-1.0/url-redirect 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "proof_request": "{--redacted--}",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "attachments": [
+        {
+          "data": {
+            "json": {
+              "auto_present": false,
+              "auto_remove": false,
+              "auto_verify": true,
+              "created_at": "--redacted--",
+              "initiator": "self",
+              "presentation_exchange_id": "--redacted--",
+              "presentation_request": "{--redacted--}",
+              "presentation_request_dict": "{--redacted--}",
+              "role": "verifier",
+              "state": "request_sent",
+              "thread_id": "--redacted--",
+              "trace": false,
+              "updated_at": "--redacted--",
+            },
+          },
+          "id": "--redacted--",
+          "type": "present-proof",
+        },
+      ],
+      "label": "vc-authn-oidc",
+      "use_public_did": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/out-of-band/create-invitation",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory OOB/connectionless/present-proof-2.0/encoded-payload 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "presentation_request": "{--redacted--}",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof-2.0/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "attachments": [
+        {
+          "data": {
+            "json": {
+              "auto_present": false,
+              "auto_remove": false,
+              "auto_verify": true,
+              "by_format": {
+                "pres_request": {
+                  "indy": {
+                    "name": "proof-request",
+                    "nonce": "--redacted--",
+                    "requested_attributes": {
+                      "studentInfo": {
+                        "names": [
+                          "given_names",
+                          "family_name",
+                        ],
+                        "non_revoked": {
+                          "from": "--redacted--",
+                          "to": "--redacted--",
+                        },
+                        "restrictions": [
+                          {
+                            "issuer_did": "--redacted--",
+                            "schema_name": "Person",
+                            "schema_version": "1.1",
+                          },
+                        ],
+                      },
+                    },
+                    "requested_predicates": {},
+                    "version": "1.0",
+                  },
+                },
+              },
+              "created_at": "--redacted--",
+              "initiator": "self",
+              "pres_ex_id": "--redacted--",
+              "pres_request": "{--redacted--}",
+              "role": "verifier",
+              "state": "request-sent",
+              "thread_id": "--redacted--",
+              "trace": false,
+              "updated_at": "--redacted--",
+            },
+          },
+          "id": "--redacted--",
+          "type": "present-proof",
+        },
+      ],
+      "label": "vc-authn-oidc",
+      "use_public_did": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/out-of-band/create-invitation",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof-2.0/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory OOB/connectionless/present-proof-2.0/url-redirect 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "presentation_request": "{--redacted--}",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof-2.0/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "attachments": [
+        {
+          "data": {
+            "json": {
+              "auto_present": false,
+              "auto_remove": false,
+              "auto_verify": true,
+              "by_format": {
+                "pres_request": {
+                  "indy": {
+                    "name": "proof-request",
+                    "nonce": "--redacted--",
+                    "requested_attributes": {
+                      "studentInfo": {
+                        "names": [
+                          "given_names",
+                          "family_name",
+                        ],
+                        "non_revoked": {
+                          "from": "--redacted--",
+                          "to": "--redacted--",
+                        },
+                        "restrictions": [
+                          {
+                            "issuer_did": "--redacted--",
+                            "schema_name": "Person",
+                            "schema_version": "1.1",
+                          },
+                        ],
+                      },
+                    },
+                    "requested_predicates": {},
+                    "version": "1.0",
+                  },
+                },
+              },
+              "created_at": "--redacted--",
+              "initiator": "self",
+              "pres_ex_id": "--redacted--",
+              "pres_request": "{--redacted--}",
+              "role": "verifier",
+              "state": "request-sent",
+              "thread_id": "--redacted--",
+              "trace": false,
+              "updated_at": "--redacted--",
+            },
+          },
+          "id": "--redacted--",
+          "type": "present-proof",
+        },
+      ],
+      "label": "vc-authn-oidc",
+      "use_public_did": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/out-of-band/create-invitation",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof-2.0/records/{record_id}",
+  },
+]
+`;
+
 exports[`Mandatory connected/present-proof-1.0/encoded-payload 1`] = `
 [
   {
@@ -148,7 +417,7 @@ exports[`Mandatory connectionless/present-proof-1.0/encoded-payload 1`] = `
       "auto_remove": false,
       "auto_verify": true,
       "comment": "string",
-      "proof_request": "--redacted--",
+      "proof_request": "{--redacted--}",
       "trace": false,
     },
     "headers": {
@@ -192,7 +461,7 @@ exports[`Mandatory connectionless/present-proof-1.0/url-redirect 1`] = `
       "auto_remove": false,
       "auto_verify": true,
       "comment": "string",
-      "proof_request": "--redacted--",
+      "proof_request": "{--redacted--}",
       "trace": false,
     },
     "headers": {
@@ -236,7 +505,51 @@ exports[`Mandatory connectionless/present-proof-2.0/encoded-payload 1`] = `
       "auto_remove": false,
       "auto_verify": true,
       "comment": "string",
-      "presentation_request": "--redacted--",
+      "presentation_request": "{--redacted--}",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof-2.0/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof-2.0/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory connectionless/present-proof-2.0/url-redirect 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/wallet/did/public",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "presentation_request": "{--redacted--}",
       "trace": false,
     },
     "headers": {
@@ -431,7 +744,7 @@ exports[`Mandatory setup 1`] = `
       "auto_remove": false,
       "connection_id": "{connection_id}",
       "cred_def_id": "{cred_def_id}",
-      "credential_preview": "--redacted--",
+      "credential_preview": "{--redacted--}",
       "trace": true,
     },
     "headers": {

@@ -46,6 +46,7 @@ import {
   CredentialDefinitionBuilder,
   ProofRequestBuilder,
   SchemaBuilder,
+  waitFor,
 } from "./lib";
 import { IndyVdrPoolConfig } from "@credo-ts/indy-vdr";
 import { OutOfBandRecord } from "@credo-ts/core";
@@ -179,10 +180,6 @@ export const createAgent = async (
   return agent;
 };
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export class AgentCredo implements AriesAgent {
   config: any;
   ledgers: any[];
@@ -240,24 +237,28 @@ export class AgentCredo implements AriesAgent {
     await this.agent.credentials.acceptOffer({ credentialRecordId: offer.id });
   }
   async acceptProof(proof: AcceptProofArgs): Promise<void> {
-    while (true) {
-      const proofs = await this.agent.proofs.getAll();
-      //console.log(`Proofs ${proofs.length}`)
-      for (let index = 0; index < proofs.length; index++) {
-        const p = proofs[index];
-        console.log(
-          `[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${
-            p.threadId
-          }, arg:${proof.id}`
-        );
-        console.dir(p.toJSON());
-        if (p.threadId === proof.id) {
-          await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
-          return;
+    
+      while (true) {
+        const proofs = await this.agent.proofs.getAll();
+        //console.log(`Proofs ${proofs.length}`)
+        for (let index = 0; index < proofs.length; index++) {
+          const p = proofs[index];
+          //console.dir(p.toJSON());
+          if ("id" in proof) {
+            //console.log(`[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${p.threadId}, arg:${proof.id}`);
+            if (p.threadId === proof.id) {
+              await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
+              return;
+            }
+          } else if ("connection_id" in proof) {
+            if (p.connectionId ===  proof.connection_id){
+              await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
+              return;
+            }
+          }
         }
+        waitFor(1000);
       }
-      delay(1000);
-    }
   }
   async findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
     let cred!: CredentialExchangeRecord;

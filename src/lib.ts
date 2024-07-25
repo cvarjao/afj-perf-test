@@ -65,6 +65,7 @@ const sanitize = (obj: any) => {
 export const waitFor = (ms:number) => {
     return new Promise ((resolve) => {setTimeout(() => {resolve(true)}, ms);})
 }
+
 function _randomString(length: number) {
     // Declare all characters
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -854,7 +855,7 @@ export const verifyCredentialA1 = async (verifier:AriesAgent, holder: AriesAgent
             //await holder.acceptProof({id: proofId})
         }
         log(chalk.yellowBright(`> getting ready to send proof in 10s`))
-        await waitFor(10_000)
+        //await waitFor(10_000)
         await holder.acceptProof({id: proofId})
       }
     }
