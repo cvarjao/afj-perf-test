@@ -1,0 +1,456 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Mandatory connected/present-proof-1.0/encoded-payload 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "image_url": "https://bc-wallet-demo-agent-admin.apps.silver.devops.gov.bc.ca/public/student/connection/best-bc-logo.png",
+      "my_label": "Faber\`s 😇 - {timestamp}",
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "connection_id": "{connection_id}",
+      "cred_def_id": "{cred_def_id}",
+      "proof_request": "--redacted--",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof/send-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory connected/v1/M1 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "image_url": "https://bc-wallet-demo-agent-admin.apps.silver.devops.gov.bc.ca/public/student/connection/best-bc-logo.png",
+      "my_label": "Faber\`s 😇 - {timestamp}",
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "content": "Hello",
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "url": "/connections/{connection_id}/send-message",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {
+      "connection_id": "{connection_id}",
+      "state": "sent",
+    },
+    "url": "/basicmessages",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {
+      "connection_id": "{connection_id}",
+      "state": "received",
+    },
+    "url": "/basicmessages",
+  },
+]
+`;
+
+exports[`Mandatory connectionless/present-proof-1.0/encoded-payload 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/wallet/did/public",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "proof_request": "--redacted--",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory connectionless/present-proof-1.0/url-redirect 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/wallet/did/public",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "proof_request": "--redacted--",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory connectionless/present-proof-2.0/encoded-payload 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/wallet/did/public",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_remove": false,
+      "auto_verify": true,
+      "comment": "string",
+      "presentation_request": "--redacted--",
+      "trace": false,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "params": {},
+    "url": "/present-proof-2.0/create-request",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/present-proof-2.0/records/{record_id}",
+  },
+]
+`;
+
+exports[`Mandatory setup 1`] = `
+[
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {
+      "schema_name": "Person",
+      "schema_version": "1.1",
+    },
+    "url": "/schemas/created",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {
+      "schema_name": "Person",
+      "schema_version": "1.1",
+    },
+    "url": "/credential-definitions/created",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/credential-definitions/{cred_def_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/present-proof/records",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "delete",
+    "params": {},
+    "url": "/present-proof/records/{record_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/present-proof/records",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/issue-credential/records",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "delete",
+    "params": {},
+    "url": "/issue-credential/records/{record_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/issue-credential/records",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/connections",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "delete",
+    "params": {},
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "params": {},
+    "url": "/connections",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "image_url": "https://bc-wallet-demo-agent-admin.apps.silver.devops.gov.bc.ca/public/student/connection/best-bc-logo.png",
+      "my_label": "Faber\`s 😇 - {timestamp}",
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/connections/{connection_id}",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "data": {
+      "auto_issue": true,
+      "auto_remove": false,
+      "connection_id": "{connection_id}",
+      "cred_def_id": "{cred_def_id}",
+      "credential_preview": "--redacted--",
+      "trace": true,
+    },
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "post",
+    "url": "/issue-credential/send-offer",
+  },
+  {
+    "baseUrl": "--redacted--",
+    "headers": {
+      "Accept": "application/json, text/plain, */*",
+      "Authorization": "--redacted--",
+      "Content-Type": "application/json",
+    },
+    "method": "get",
+    "url": "/issue-credential/records/{record_id}",
+  },
+]
+`;

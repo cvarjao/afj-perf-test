@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from "axios";
+import _axios, { AxiosInstance } from "axios";
 import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { Logger } from "@credo-ts/core";
@@ -9,7 +9,7 @@ export class AgentTraction implements AriesAgent {
     public readonly logger: Logger;
     public constructor(config:any, logger:Logger){
         this.config = config
-        this.axios = axios.create({baseURL: config.base_url})
+        this.axios = _axios.create({baseURL: config.base_url})
         this.logger = logger
         /*
         this.axios.interceptors.request.use(function (config) {
@@ -90,7 +90,7 @@ export class AgentTraction implements AriesAgent {
     
     async _waitForProofRequestV1 (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
         //this.logger.info(`/present-proof/records/${config.presentation_exchange_id}`)
-        await http.get(`${config.base_url}/present-proof/records/${presentation_exchange_id}`, {
+        await http.get(`/present-proof/records/${presentation_exchange_id}`, {
             headers:{
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${config.auth_token}`
@@ -110,7 +110,7 @@ export class AgentTraction implements AriesAgent {
     }
     async _waitForProofRequestV2 (presentation_exchange_id: string, config: any, http: AxiosInstance, counter: number) {
         //this.logger.info(`/present-proof/records/${config.presentation_exchange_id}`)
-        await http.get(`${config.base_url}/present-proof-2.0/records/${presentation_exchange_id}`, {
+        await http.get(`/present-proof-2.0/records/${presentation_exchange_id}`, {
             headers:{
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${config.auth_token}`
@@ -133,7 +133,7 @@ export class AgentTraction implements AriesAgent {
 
         this.logger.info(`Clearing Presentantion Exchage Records `)
         while (records==undefined || records?.length > 0) {
-            records = await this.axios.get(`${this.config.base_url}/present-proof/records`, {
+            records = await this.axios.get(`/present-proof/records`, {
                 params: {},
                 headers:{
                     'Content-Type': 'application/json',
@@ -145,7 +145,7 @@ export class AgentTraction implements AriesAgent {
             .then((data:any) =>{return data.results})
             if (records !== undefined && records.length > 0) {
                 for (const record of records) {
-                    await this.axios.delete(`${this.config.base_url}/present-proof/records/${record.presentation_exchange_id}`, {
+                    await this.axios.delete(`/present-proof/records/${record.presentation_exchange_id}`, {
                         params: {},
                         headers:{
                             'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export class AgentTraction implements AriesAgent {
         this.logger.info(`Clearing Credential Issuance Records `)
         records=undefined
         while (records==undefined || records?.length > 0) {
-            records = await this.axios.get(`${this.config.base_url}/issue-credential/records`, {
+            records = await this.axios.get(`/issue-credential/records`, {
                 params: {},
                 headers:{
                     'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ export class AgentTraction implements AriesAgent {
             .then((data:any) =>{return data.results})
             if (records !== undefined && records?.length > 0) {
                 for (const record of records) {
-                    await this.axios.delete(`${this.config.base_url}/issue-credential/records/${record.credential_exchange_id}`, {
+                    await this.axios.delete(`/issue-credential/records/${record.credential_exchange_id}`, {
                         params: {},
                         headers:{
                             'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ export class AgentTraction implements AriesAgent {
         this.logger.info(`Clearing Connections`)
         records=undefined
         while (records==undefined || records?.length > 0) {
-            records = await this.axios.get(`${this.config.base_url}/connections`, {
+            records = await this.axios.get(`/connections`, {
                 params: {},
                 headers:{
                     'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ export class AgentTraction implements AriesAgent {
             records= records?.filter((item)=>!item?.alias?.endsWith('-endorser'))
             if (records !== undefined && records.length > 0) {
                 for (const record of records) {
-                    await this.axios.delete(`${this.config.base_url}/connections/${record.connection_id}`, {
+                    await this.axios.delete(`/connections/${record.connection_id}`, {
                         params: {},
                         headers:{
                             'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ export class AgentTraction implements AriesAgent {
     }
     async createPresentProofV1(builder: ProofRequestBuilder): Promise<any> {
         const proofRequest = builder.build()
-        return await this.axios.post(`${this.config.base_url}/present-proof/create-request`,{
+        return await this.axios.post(`/present-proof/create-request`,{
             "auto_remove": false,
             "auto_verify": true,
             "comment": "string",
@@ -237,7 +237,7 @@ export class AgentTraction implements AriesAgent {
     }
     async createPresentProofV2(builder: ProofRequestBuilder): Promise<any | undefined> {
         const proofRequest = builder.buildv2()
-        return await this.axios.post(`${this.config.base_url}/present-proof-2.0/create-request`,{
+        return await this.axios.post(`/present-proof-2.0/create-request`,{
             "auto_remove": false,
             "auto_verify": true,
             "comment": "string",
@@ -272,7 +272,7 @@ export class AgentTraction implements AriesAgent {
             //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
         }
         this.logger.info('create_invitation_payload', create_invitation_payload)
-        const invitation: any = (await this.axios.post(`${this.config.base_url}/out-of-band/create-invitation`, create_invitation_payload, {
+        const invitation: any = (await this.axios.post(`/out-of-band/create-invitation`, create_invitation_payload, {
             params: {},
             headers:{
                 'Content-Type': 'application/json',
@@ -311,7 +311,7 @@ export class AgentTraction implements AriesAgent {
             //handshake_protocols:['https://didcomm.org/connections/1.0', 'https://didcomm.org/didexchange/1.0'],
         }
         this.logger.info('create_invitation_payload', create_invitation_payload)
-        const invitation: any = (await this.axios.post(`${this.config.base_url}/out-of-band/create-invitation`, create_invitation_payload, {
+        const invitation: any = (await this.axios.post(`/out-of-band/create-invitation`, create_invitation_payload, {
             params: {},
             headers:{
                 'Content-Type': 'application/json',
@@ -333,7 +333,7 @@ export class AgentTraction implements AriesAgent {
         }
     }
     async sendConnectionlessProofRequestV2(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV1> {
-        const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
+        const wallet: any = (await this.axios.get(`/wallet/did/public`, {
             params: {},
             headers:{
                 'Content-Type': 'application/json',
@@ -365,7 +365,7 @@ export class AgentTraction implements AriesAgent {
         })
     }
     async sendConnectionlessProofRequest(builder: ProofRequestBuilder): Promise<ResponseCreateInvitationV1> {
-        const wallet: any = (await this.axios.get(`${this.config.base_url}/wallet/did/public`, {
+        const wallet: any = (await this.axios.get(`/wallet/did/public`, {
             params: {},
             headers:{
                 'Content-Type': 'application/json',
@@ -398,7 +398,7 @@ export class AgentTraction implements AriesAgent {
     }
     async sendProofRequestV1(connection_id: string, proofRequestbuilder: ProofRequestBuilder): Promise<any> {
         const proofRequest = proofRequestbuilder.build()
-        return await this.axios.post(`${this.config.base_url}/present-proof/send-request`,{
+        return await this.axios.post(`/present-proof/send-request`,{
             "auto_remove": false,
             "auto_verify": true,
             "comment": "string",
@@ -427,7 +427,7 @@ export class AgentTraction implements AriesAgent {
     async createSchemaCredDefinition(credDefBuilder: CredentialDefinitionBuilder): Promise<string | undefined> {
         const http = this.axios
         const config = this.config
-        const schemas = await http.get(`${config.base_url}/credential-definitions/created`, {
+        const schemas = await http.get(`/credential-definitions/created`, {
             params:{schema_name: credDefBuilder.getSchema()?.getName(), schema_version: credDefBuilder.getSchema()?.getVersion()},
             headers:{
                 'Content-Type': 'application/json',
@@ -439,7 +439,7 @@ export class AgentTraction implements AriesAgent {
         if (schemas.data.credential_definition_ids.length > 0) {
             const credential_definition_ids:string[] = schemas.data.credential_definition_ids
             for (const credential_definition_id of credential_definition_ids) {
-                const credential_definition = await http.get(`${config.base_url}/credential-definitions/${credential_definition_id}`, {
+                const credential_definition = await http.get(`/credential-definitions/${credential_definition_id}`, {
                     headers:{
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${config.auth_token}`
@@ -454,7 +454,7 @@ export class AgentTraction implements AriesAgent {
             }
         }
         if (credential_definitions.length === 0){
-            await http.get(`${config.base_url}/transactions`, {
+            await http.get(`/transactions`, {
                 headers:{
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${config.auth_token}`
@@ -476,7 +476,7 @@ export class AgentTraction implements AriesAgent {
             this.logger.info('Creating Credential Definition ...')
             const credDef = credDefBuilder.build()
             this.logger.info('credDef', credDef)
-            return await axios.post(`${config.base_url}/credential-definitions`,credDef, {
+            return await this.axios.post(`/credential-definitions`,credDef, {
                 headers:{
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${config.auth_token}`
@@ -508,12 +508,12 @@ export class AgentTraction implements AriesAgent {
     async startup(): Promise<void> {
         const config = this.config
         if (config.tenant_id && config.api_key) {
-            await axios.post(`${config.base_url}/multitenancy/tenant/${config.tenant_id}/token`,{"api_key":config.api_key})
+            await this.axios.post(`/multitenancy/tenant/${config.tenant_id}/token`,{"api_key":config.api_key})
             .then((value)=>{
                 config.auth_token = value.data.token
             })
         }else {
-            await axios.post(`${config.base_url}/multitenancy/wallet/${config.wallet_id}/token`,{"wallet_key":config.wallet_key})
+            await this.axios.post(`/multitenancy/wallet/${config.wallet_id}/token`,{"wallet_key":config.wallet_key})
             .then((value)=>{
                 config.auth_token = value.data.token
             })
@@ -586,7 +586,7 @@ export class AgentTraction implements AriesAgent {
     async createSchema(schemaBuilder: SchemaBuilder): Promise<string | undefined> {
         const config = this.config
         const schema = schemaBuilder.build()
-        const schemas = await axios.get(`${config.base_url}/schemas/created`, {
+        const schemas = await this.axios.get(`/schemas/created`, {
             params:{schema_name: schema.schema_name, schema_version: schema.schema_version},
             headers:{
                 'Content-Type': 'application/json',
@@ -596,7 +596,7 @@ export class AgentTraction implements AriesAgent {
         if (schemas.data.schema_ids.length === 0){
             this.logger.info('Creating Schema ...')
             this.logger.info('schema', schema)
-            await axios.post(`${config.base_url}/schemas`, schema, {
+            await this.axios.post(`/schemas`, schema, {
                 headers:{
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${config.auth_token}`
@@ -656,7 +656,7 @@ export class AgentTraction implements AriesAgent {
     async waitForOfferAccepted (credential_exchange_id: string) {
         const config = this.config
         const http = this.axios
-        await http.get(`${config.base_url}/issue-credential/records/${credential_exchange_id}`, {
+        await http.get(`/issue-credential/records/${credential_exchange_id}`, {
             headers:{
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${config.auth_token}`

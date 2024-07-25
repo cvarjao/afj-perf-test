@@ -8,7 +8,7 @@ import pino from "pino";
 
 const stepTimeout = 120_000
 const shortTimeout = 40_000
-
+//import { dir as console_dir } from "console"
 import { setGlobalDispatcher, Agent} from 'undici';
 import { AriesAgent, ResponseCreateInvitationV1 } from "./Agent";
 import { AgentManual } from "./AgentManual";
@@ -42,13 +42,82 @@ describe("Mandatory", () => {
   const credDef = new CredentialDefinitionBuilder()
     .setSchema(schema)
     .setSupportRevocation(true);
-  
+  const requests: unknown[] = []
   beforeAll(async () => {
     logger.info('1 - beforeAll')
     await agentA.startup()
     await agentB.startup()
     //await Promise.all([agentA.startup(), agentB.startup()]);
-
+    agentA.axios.interceptors.request.use(request => {
+      //take a copy
+      const req = JSON.parse(JSON.stringify({
+        headers:request.headers,
+        data:request.data,
+        params:request.params,
+        baseUrl: '--redacted--', //request.baseURL,
+        method: request.method,
+        url: request.url
+      }))
+      if (req.headers['Authorization']) {
+        req.headers['Authorization'] = '--redacted--'
+      }
+      if (req.url.startsWith('/connections/')){
+        const regex = /^(\/connections\/)([^/]+)(\/[^/]+)?$/mg;
+        req.url = req.url.replace(regex, '$1{connection_id}$3');
+      }
+      if (req.url.startsWith('/issue-credential/records/')){
+        const regex = /^(\/issue-credential\/records\/)([^/]+)(\/[^/]+)?$/mg;
+        req.url = req.url.replace(regex, '$1{record_id}$3');
+      }
+      if (req.url.startsWith('/present-proof/records/')){
+        const regex = /^(\/present-proof\/records\/)([^/]+)(\/[^/]+)?$/mg;
+        req.url = req.url.replace(regex, '$1{record_id}$3');
+      }
+      if (req.url.startsWith('/present-proof-2.0/records/')){
+        const regex = /^(\/present-proof-2.0\/records\/)([^/]+)(\/[^/]+)?$/mg;
+        req.url = req.url.replace(regex, '$1{record_id}$3');
+      }
+      if (req.url.startsWith('/credential-definitions/')){
+        if (!(req.url === '/credential-definitions/created')){
+          const regex = /^(\/credential-definitions\/)([^/]+)(\/[^/]+)?$/mg;
+          req.url = req.url.replace(regex, '$1{cred_def_id}$3');
+        }
+      }
+      if (req.method === 'get' && req.url === '/basicmessages' && req.params?.connection_id) {
+        req.params.connection_id = '{connection_id}'
+      }
+      if (req.method === 'post' && req.url === '/present-proof/send-request' && req.data) {
+        req.data.proof_request = '--redacted--'
+        req.data.connection_id = '{connection_id}'
+        req.data.cred_def_id = '{cred_def_id}'
+      }
+      if (req.method === 'post' && req.url === '/issue-credential/send-offer' && req.data) {
+        req.data.credential_preview = '--redacted--'
+        req.data.cred_def_id = '{cred_def_id}'
+        req.data.connection_id = '{connection_id}'
+      }
+      if (req.method === 'post' && req.url === '/present-proof/create-request' && req.data) {
+        req.data.proof_request = '--redacted--'
+      }
+      if (req.method === 'post' && req.url === '/present-proof-2.0/create-request' && req.data) {
+        req.data.presentation_request = '--redacted--'
+      }
+      if (req.method === 'post' && req.url === '/connections/{connection_id}' && req.data?.my_label) {
+        const regex = /(- \d+$)/mg;
+        req.data.my_label = req.data.my_label.replace(regex, '- {timestamp}');
+      }
+      // do not add consecutive duplicates
+      if (requests.length > 0) {
+        const prev = requests[requests.length - 1]
+        if (JSON.stringify(prev) === JSON.stringify(req)) {
+          //console_dir(request, {depth: 6})
+          return request
+        }
+      }
+      //console_dir(req, {depth: 6})
+      requests.push(req)
+      return request
+    })
   }, stepTimeout);
   afterAll(async () => {
     logger.info('1 - afterAll')
@@ -56,6 +125,9 @@ describe("Mandatory", () => {
     _logger.flush();
     //loggerTransport.end();
   }, stepTimeout);
+  beforeEach(async () => {
+    requests.length = 0
+  })
   test("connected/v1/M1", async () => {
     const issuer = agentA
     const holder = agentB
@@ -69,10 +141,10 @@ describe("Mandatory", () => {
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
     const msgSent: any = await issuer.sendBasicMessage(remoteInvitation.payload.connection_id as string, 'Hello')
     logger.info('Message Sent:', msgSent)
-    await waitFor(10_000)
     await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
     const msgRcvd = await issuer.waitForBasicMessage(remoteInvitation.payload.connection_id as string, Date.parse(msgSent.created_at as string), ["k", "ok"])
     logger.info('Message Received:', msgRcvd)
+    expect(requests).toMatchSnapshot(); //([{data: {my_label: expect.any(String)}}])
   }, shortTimeout);
   test.skip("OOB/connected/messaging", async () => {
     const issuer = agentA
@@ -106,6 +178,7 @@ describe("Mandatory", () => {
       console.dir(error)
       throw error
     }
+    expect(requests).toMatchSnapshot();
   }, stepTimeout)
   test("connected/present-proof-1.0/encoded-payload", async () => {
     //const issuer = agentA
@@ -129,6 +202,7 @@ describe("Mandatory", () => {
     )
     const proofRequestSent = await verifier.sendProofRequestV1(remoteInvitation.payload.connection_id as string, proofRequest)
     await verifier.waitForPresentation(proofRequestSent.presentation_exchange_id)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("connectionless/present-proof-1.0/encoded-payload", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -141,6 +215,7 @@ describe("Mandatory", () => {
                 .setNonRevoked(seconds_since_epoch(new Date()))
     )
     await verifyCredentialA1(agentA, agentB, proofRequest)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("connectionless/present-proof-1.0/url-redirect", async () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -153,6 +228,7 @@ describe("Mandatory", () => {
                 .setNonRevoked(seconds_since_epoch(new Date()))
     )
     await verifyCredentialA2(agentA, agentB, proofRequest)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("connectionless/present-proof-2.0/encoded-payload", async () => {
     const verifier = agentA
@@ -177,6 +253,7 @@ describe("Mandatory", () => {
     }
     logger.info('remoteInvitation2', remoteInvitation2)
     await verifier.waitForPresentationV2(remoteInvitation2.payload.presentation_exchange_id as string)
+    expect(requests).toMatchSnapshot();
   }, shortTimeout);
   test("connectionless/present-proof-2.0/url-redirect", async () => {
     const verifier = agentA
