@@ -70,7 +70,7 @@ describe("AppAttestation", () => {
       throw error
     }
   }, stepTimeout)
-  test("connected/v1", async () => {
+  test("connected/v1/prod", async () => {
     const verifier = agentA
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -78,7 +78,7 @@ describe("AppAttestation", () => {
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
-    await verifier.waitForConnectionReady(remoteInvitation.payload.connection_id)
+    await verifier.waitForConnectionReady(remoteInvitation.payload.connection_id as string)
     logger.info(`${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
 
@@ -94,9 +94,12 @@ describe("AppAttestation", () => {
             "operating_system",
             "app_version",
           ])
-          .addRestriction({ "schema_name": schema.getName(), "schema_version": schema.getVersion(), "issuer_did": credDef.getId()?.split(':')[0] })
+          .addRestriction({
+            cred_def_id: "XqaRXJt4sXE6TRpfGpVbGw:3:CL:655:bcwallet",
+          })
+          //.addRestriction({ "schema_name": schema.getName(), "schema_version": schema.getVersion(), "issuer_did": credDef.getId()?.split(':')[0] })
       )
-    const proofRequestSent: any = await verifier.sendProofRequestV1(remoteInvitation.payload.connection_id, proofRequest)
+    const proofRequestSent: any = await verifier.sendProofRequestV1(remoteInvitation.payload.connection_id as string, proofRequest)
     logger.info('Proof Request Sent:', proofRequestSent)
     await verifier.waitForPresentation(proofRequestSent.presentation_exchange_id)
   }, shortTimeout);

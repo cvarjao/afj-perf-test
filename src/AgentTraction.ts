@@ -446,10 +446,12 @@ export class AgentTraction implements AriesAgent {
                     }
                 })
                 const credDef = credential_definition.data
-                if (!credDefBuilder.getSupportRevocation() && credDef.credential_definition.value.revocation === undefined){
-                    credential_definitions.push(credDef)
-                } else if (credDefBuilder.getSupportRevocation() && credDef.credential_definition.value.revocation !== undefined){
-                    credential_definitions.push(credDef)
+                if (credDef.credential_definition.tag === credDefBuilder.getTag()) {
+                    if (!credDefBuilder.getSupportRevocation() && credDef.credential_definition.value.revocation === undefined){
+                        credential_definitions.push(credDef)
+                    } else if (credDefBuilder.getSupportRevocation() && credDef.credential_definition.value.revocation !== undefined){
+                        credential_definitions.push(credDef)
+                    }
                 }
             }
         }

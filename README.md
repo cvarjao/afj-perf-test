@@ -1,14 +1,19 @@
 ## Setup
 1. Clone Repository
-1. Install dependencied
-    ```
-    yarn install
-    ```
+```
+git clone <git repository url>
+```
+1. Install dependencies
+```
+yarn install
+```
 ## Configure your traction instance
-### Automatically Generate using traction sandbox enrionment
-    ```
-    yarn ts-node src/setup-from-sandbox.ts
-    ```
+### Automatically Generate using traction sandbox environment
+
+```
+yarn ts-node src/setup-from-sandbox.ts
+```
+
 ### Manually create the local env file
 1. Copy file `sample.local.env.json` to `local.env.json`
 2. Configure agent:
@@ -17,11 +22,11 @@
     - `tenant_id`: Traction tenant ID
     - `api_key`: Traction API Key
 
-## Start ngrok service
+## In terminal 1, start ngrok service
 ```
 ngrok http "file://${PWD}/tmp"
 ```
-## Run Test
+## In terminal 2, run tests
 ```
 yarn jest --runInBand --detectOpenHandles --forceExit
 ```
