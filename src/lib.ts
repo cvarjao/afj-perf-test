@@ -1,9 +1,9 @@
 import axios, {AxiosInstance} from 'axios';
 import { PersonCredential1 } from './mocks';
-import { BaseLogger, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
+import { BaseLogger, InvitationType, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
 import { Logger } from 'pino';
 import { AgentTraction } from './AgentTraction';
-import { AriesAgent, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from './Agent';
+import { AriesAgent, INVITATION_TYPE, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from './Agent';
 import fs from 'node:fs';
 import path from 'node:path';
 import { log, dir} from "console"
@@ -804,7 +804,8 @@ export class Context {
 
 export const issueCredential = async (issuer:AgentTraction, holder: AriesAgent, cred: PersonCredential1)  => {
     const { logger } = issuer
-    const remoteInvitation = await issuer.createInvitationToConnect() as ResponseCreateInvitationV1
+    
+    const remoteInvitation = await issuer.createInvitationToConnect(INVITATION_TYPE.CONN_1_0)
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)

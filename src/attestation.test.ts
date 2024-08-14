@@ -10,7 +10,7 @@ const stepTimeout = 999999999
 const shortTimeout = (2 * 60) * 1000
 
 import { setGlobalDispatcher, Agent } from 'undici';
-import { AriesAgent, ResponseCreateInvitationV1 } from "./Agent";
+import { AriesAgent, INVITATION_TYPE, ResponseCreateInvitationV1 } from "./Agent";
 import { AgentManual } from "./AgentManual";
 setGlobalDispatcher(new Agent({ connect: { timeout: 20_000 } }));
 
@@ -74,7 +74,7 @@ describe("AppAttestation", () => {
     const verifier = agentA
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await verifier.createInvitationToConnect() as ResponseCreateInvitationV1
+    const remoteInvitation = await verifier.createInvitationToConnect(INVITATION_TYPE.CONN_1_0)
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)

@@ -10,7 +10,7 @@ const stepTimeout = 120_000
 const shortTimeout = 40_000
 import { dir as console_dir } from "console"
 import { setGlobalDispatcher, Agent} from 'undici';
-import { AriesAgent, INVITATION_TYPE, ResponseCreateInvitationV1 } from "./Agent";
+import { AriesAgent, INVITATION_TYPE } from "./Agent";
 import { AgentManual } from "./AgentManual";
 import { cache_requests } from "./axios-traction-serializer";
 setGlobalDispatcher(new Agent({connect: { timeout: 20_000 }}));
@@ -80,7 +80,7 @@ describe("Mandatory", () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await issuer.createInvitationToConnect() as ResponseCreateInvitationV1
+    const remoteInvitation = await issuer.createInvitationToConnect(INVITATION_TYPE.CONN_1_0)
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
@@ -98,7 +98,7 @@ describe("Mandatory", () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await issuer.createOOBInvitationToConnect(INVITATION_TYPE.OOB_DIDX_1_1)
+    const remoteInvitation = await issuer.createInvitationToConnect(INVITATION_TYPE.OOB_DIDX_1_1)
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
@@ -149,7 +149,7 @@ describe("Mandatory", () => {
     const verifier = agentVerifier
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await verifier.createInvitationToConnect() as ResponseCreateInvitationV1
+    const remoteInvitation = await verifier.createInvitationToConnect(INVITATION_TYPE.CONN_1_0)
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)

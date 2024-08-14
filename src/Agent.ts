@@ -1,5 +1,5 @@
 import { Logger, OutOfBandRecord } from "@credo-ts/core";
-import { CredentialDefinitionBuilder, OOB_CONNECTION_HANDSHAKE_PROTOCOL, ProofRequestBuilder, SchemaBuilder } from "./lib";
+import { CredentialDefinitionBuilder, ProofRequestBuilder, SchemaBuilder } from "./lib";
 
 export type InvitationRecordV2 = {invi_msg_id: string, invitation_url: string, invitation: any, presentation_exchange_id?: string}
 export type InvitationRecordV1 = {connection_id?: string, invitation: any, invitation_url: string, presentation_exchange_id?: string}
@@ -31,10 +31,11 @@ export type HasId = {id: string}
 export type HadConnectionId = {connection_id: string}
 export type AcceptProofArgs = HasId | HadConnectionId
 export type ReceiveInvitationResponse = { outOfBandRecord?: OutOfBandRecord; connectionRecord?: ConnectionRef, invitationRequestsThreadIds?: string[] }
+
 export interface AriesAgent {
     readonly logger: Logger
     sendBasicMessage(connection_id: string, content: string): Promise<any>
-    createInvitationToConnect(): Promise<ResponseCreateInvitation>
+    createInvitationToConnect<T extends INVITATION_TYPE>(invitationType: T): Promise<CreateInvitationResponse<T>>
     receiveInvitation(invitation: ResponseCreateInvitation): Promise<ReceiveInvitationResponse>;
     startup(): Promise<void>;
     shutdown(): Promise<void>;

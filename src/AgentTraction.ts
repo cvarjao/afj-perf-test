@@ -1,5 +1,5 @@
 import _axios, { AxiosInstance } from "axios";
-import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, INVITATION_TYPE, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CreateInvitationResponse, CredentialOfferRef, INVITATION_TYPE, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { Logger } from "@credo-ts/core";
 
@@ -576,7 +576,17 @@ export class AgentTraction implements AriesAgent {
             }
         })
     }
-    async createInvitationToConnect(): Promise<ResponseCreateInvitation> {
+    async createInvitationToConnect<T extends INVITATION_TYPE>(invitationType: T): Promise<CreateInvitationResponse<T>> {
+        switch(invitationType) {
+            case INVITATION_TYPE.CONN_1_0:
+                return  this.__createInvitationToConnectConnV1() as Promise<CreateInvitationResponse<typeof invitationType>>
+            case INVITATION_TYPE.OOB_CONN_1_0:
+                return  this.createOOBInvitationToConnect(invitationType) as Promise<CreateInvitationResponse<typeof invitationType>>
+            default:
+                throw new Error("Invalid invitation type");
+        }
+    }
+    async __createInvitationToConnectConnV1(): Promise<CreateInvitationResponse<INVITATION_TYPE.CONN_1_0>> {
         const config = this.config
         const http = this.axios
         return http.post(`/connections/create-invitation`,{

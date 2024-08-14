@@ -1,7 +1,9 @@
 import {
   AcceptProofArgs,
   AriesAgent,
+  CreateInvitationResponse,
   CredentialOfferRef,
+  INVITATION_TYPE,
   ReceiveInvitationResponse,
   ResponseCreateInvitation,
 } from "./Agent";
@@ -277,7 +279,7 @@ export class AgentCredo implements AriesAgent {
   createSchema(_builder: SchemaBuilder): Promise<string | undefined> {
     throw new Error("Method not implemented.");
   }
-  createInvitationToConnect(): Promise<ResponseCreateInvitation> {
+  async createInvitationToConnect<T extends INVITATION_TYPE>(_invitationType: T): Promise<CreateInvitationResponse<T>> {
     throw new Error("Method not implemented.");
   }
   async receiveInvitation(
