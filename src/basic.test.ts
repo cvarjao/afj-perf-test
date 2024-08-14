@@ -3,14 +3,14 @@ import { AgentTraction } from "./AgentTraction";
 import { AgentCredo } from "./AgentCredo";
 import { LogLevel } from "@credo-ts/core";
 import { PersonCredential1, PersonSchemaV1_1 } from "./mocks";
-import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2, waitFor, withRedirectUrl } from "./lib";
+import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestBuilder, RequestAttributeBuilder, seconds_since_epoch, verifyCredentialA1, verifyCredentialA2, verifyCredentialB1, verifyCredentialB2, withRedirectUrl } from "./lib";
 import pino from "pino";
 
 const stepTimeout = 120_000
 const shortTimeout = 40_000
 import { dir as console_dir } from "console"
 import { setGlobalDispatcher, Agent} from 'undici';
-import { AriesAgent, ResponseCreateInvitationV1 } from "./Agent";
+import { AriesAgent, INVITATION_TYPE, ResponseCreateInvitationV1 } from "./Agent";
 import { AgentManual } from "./AgentManual";
 import { cache_requests } from "./axios-traction-serializer";
 setGlobalDispatcher(new Agent({connect: { timeout: 20_000 }}));
@@ -57,6 +57,15 @@ describe("Mandatory", () => {
     agentSchemaOwner.axios.interceptors.request.use(cache_requests(requests))
     agentIssuer.axios.interceptors.request.use(cache_requests(requests))
     agentVerifier.axios.interceptors.request.use(cache_requests(requests))
+    agentIssuer.axios.interceptors.response.use( async (response) => {
+      return response
+    }, (error) => {
+      console_dir(error.response)
+      return Promise.reject(error);
+    })
+
+    await agentSchemaOwner.createSchema(schema);
+    await agentIssuer.createSchemaCredDefinition(credDef);
   }, stepTimeout);
   afterAll(async () => {
     logger.info('1 - afterAll')
@@ -85,11 +94,11 @@ describe("Mandatory", () => {
     logger.info('Message Received:', msgRcvd)
     //expect(requests).toMatchSnapshot();
   }, shortTimeout);
-  test.skip("OOB/connected/messaging", async () => {
+  test("OOB/connected/messaging", async () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
-    const remoteInvitation = await issuer.createOOBInvitationToConnect()
+    const remoteInvitation = await issuer.createOOBInvitationToConnect(INVITATION_TYPE.OOB_DIDX_1_1)
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
@@ -106,8 +115,6 @@ describe("Mandatory", () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
 
     try{
-      await agentSchemaOwner.createSchema(schema);
-      await agentIssuer.createSchemaCredDefinition(credDef);
       await agentIssuer.clearAllRecords()
       
       const personCred = new PersonCredential1(credDef)
@@ -119,6 +126,24 @@ describe("Mandatory", () => {
     }
     //expect(requests).toMatchSnapshot();
   }, stepTimeout)
+  test.only("OOB/connected/issue", async () => {
+    const issuer = agentIssuer
+    const holder = agentB
+    const cred = new PersonCredential1(credDef)
+    const { logger } = issuer
+    const remoteInvitation = await issuer.createOOBInvitationToConnect(INVITATION_TYPE.OOB_CONN_1_0)
+    logger.info('remoteInvitation', remoteInvitation)
+    logger.info(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    logger.info(`waiting for issuer to accept connection`)
+    const {connection_id} =  await issuer.waitForOOBConnectionReady(remoteInvitation.payload.invi_msg_id)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
+    await issuer.sendBasicMessage(connection_id, 'Hello')
+    const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, connection_id)
+    const offer = await holder.findCredentialOffer(agentBConnectionRef1.connectionRecord?.connection_id as string)
+    await holder.acceptCredentialOffer(offer)
+    await issuer.waitForOfferAccepted(credential_exchange_id as string)
+  }, shortTimeout);
   test("connected/present-proof-1.0/encoded-payload", async () => {
     //const issuer = agentA
     const verifier = agentVerifier

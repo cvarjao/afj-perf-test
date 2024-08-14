@@ -1,5 +1,5 @@
 import _axios, { AxiosInstance } from "axios";
-import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
+import { AcceptProofArgs, AriesAgent, ConnectionRef, CredentialOfferRef, INVITATION_TYPE, ReceiveInvitationResponse, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from "./Agent";
 import { CredentialDefinitionBuilder, extractResponseData, IssueCredentialPreviewV1, printResponse, ProofRequestBuilder, SchemaBuilder } from "./lib";
 import { Logger } from "@credo-ts/core";
 
@@ -284,7 +284,7 @@ export class AgentTraction implements AriesAgent {
         invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
         
         return  {
-            type: "didexchange/1.0",
+            type: INVITATION_TYPE.OOB_DIDX_1_1,
             payload: {
                 invitation: invitation.invitation,
                 invitation_url: invitation.invitation_url,
@@ -323,7 +323,7 @@ export class AgentTraction implements AriesAgent {
         invitation.invitation_url = 'bcwallet://launch?oob='+encodeURIComponent(Buffer.from(JSON.stringify(invitation.invitation)).toString('base64'))
         //return {...invitation, presentation_exchange_id:proof["pres_ex_id"]}
         return  {
-            type: "didexchange/1.0",
+            type: INVITATION_TYPE.OOB_DIDX_1_1,
             payload: {
                 invitation: invitation.invitation,
                 invitation_url: invitation.invitation_url,
@@ -355,7 +355,7 @@ export class AgentTraction implements AriesAgent {
             const baseUrl = 'bcwallet://launch'
             const invitation_url = baseUrl+'?c_i='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
             return {
-                type: "connections/1.0",
+                type: INVITATION_TYPE.CONN_1_0,
                 payload: {
                     invitation: value,
                     presentation_exchange_id: proof.pres_ex_id,
@@ -387,7 +387,7 @@ export class AgentTraction implements AriesAgent {
             const baseUrl = 'bcwallet://launch'
             const invitation_url = baseUrl+'?oob='+encodeURIComponent(Buffer.from(JSON.stringify(value, undefined, 2)).toString('base64'))
             return {
-                type: "connections/1.0",
+                type: INVITATION_TYPE.CONN_1_0,
                 payload: {
                     invitation: value,
                     presentation_exchange_id: proof.presentation_exchange_id,
@@ -521,20 +521,23 @@ export class AgentTraction implements AriesAgent {
             })
         }
     }
-    async createOOBInvitationToConnect(): Promise<ResponseCreateInvitationV2> {
+    async createOOBInvitationToConnect<T extends INVITATION_TYPE>(invitationType: T): Promise<ResponseCreateInvitationV2> {
         const config = this.config
         const http = this.axios
-        return http.post(`/out-of-band/create-invitation`,{
-            //"accept":["didcomm/aip1","didcomm/aip2;env=rfc19"],
+        //const handshake_protocols: string[] = []
+        //handshake_protocols.push(handshakeProtocol as string)
+        const payload =  {
             "alias":`Faber\`s 😇 - ${new Date().getTime()}`,
-            //"goal":"",
-            //"goal_code":"",
-            "handshake_protocols":["https://didcomm.org/didexchange/1.1"],
             "my_label":`Faber\`s 😇 - ${new Date().getTime()}`,
-            "protocol_version":"1.1",
-            //"use_public_did":false,
-            "use_did_method": "did:peer:4",
-        }, {
+            "handshake_protocols": [invitationType.substring(6)],
+        }
+        if (invitationType === INVITATION_TYPE.OOB_DIDX_1_1){
+            Object.assign(payload, {
+                "protocol_version":"1.1",
+                "use_did_method": "did:peer:4",
+            })
+        }
+        return http.post(`/out-of-band/create-invitation`,payload, {
             params: {
                 "auto_accept": true,
                 "multi_use": false,
@@ -549,13 +552,27 @@ export class AgentTraction implements AriesAgent {
         .then((value)=>{
             this.logger.info('createInvitationToConnect', value.data)
             this.logger.info(`invitation_url=${value.data.invitation_url}`)
-            return {
-                type: "didexchange/1.0",
-                payload: {
-                    invitation_url: value.data.invitation_url,
-                    invi_msg_id: value.data.invi_msg_id,
-                    invitation: value.data.invitation,
-                }
+            switch(invitationType) {
+                case INVITATION_TYPE.OOB_CONN_1_0:
+                    return {
+                        type: INVITATION_TYPE.OOB_CONN_1_0,
+                        payload: {
+                            invitation_url: value.data.invitation_url,
+                            invi_msg_id: value.data.invi_msg_id,
+                            invitation: value.data.invitation,
+                        }
+                    }
+                    case INVITATION_TYPE.OOB_DIDX_1_1:
+                        return {
+                            type: INVITATION_TYPE.OOB_DIDX_1_1,
+                            payload: {
+                                invitation_url: value.data.invitation_url,
+                                invi_msg_id: value.data.invi_msg_id,
+                                invitation: value.data.invitation,
+                            }
+                        }
+                default:
+                    throw new Error("Unsupported protocol");
             }
         })
     }
@@ -573,7 +590,7 @@ export class AgentTraction implements AriesAgent {
         })
         .then((value)=>{
             const response:ResponseCreateInvitationV1 = {
-                type:"connections/1.0",
+                type: INVITATION_TYPE.CONN_1_0,
                 payload: {
                     invitation_url: value.data.invitation_url,
                     connection_id: value.data.connection_id,

@@ -11,6 +11,12 @@ import chalk from 'chalk';
 import { AgentCredo } from './AgentCredo';
 import { AnonCredsApi } from '@credo-ts/anoncreds';
 
+
+export enum OOB_CONNECTION_HANDSHAKE_PROTOCOL {
+    CONN_1_0 = "https://didcomm.org/connections/1.0",
+    DIDX_1_1 = "https://didcomm.org/didexchange/1.1",
+  }
+
 export const toLocalISOString = (date:Date) =>{
     const tzoffset = (new Date()).getTimezoneOffset() // offset in minutes
     const tzoffsetInHours = Math.floor(tzoffset / 60) //offset in hours
