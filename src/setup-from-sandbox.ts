@@ -35,9 +35,11 @@ const getNewTenant = async () => {
   console.log('Requesting tenant')
   const baseUrl = 'https://traction-sandbox-tenant-proxy.apps.silver.devops.gov.bc.ca'
   //${baseUiUrl}/api/innkeeperReservation
-  const request = await axios.post(`${baseUrl}/multitenancy/reservations`,
-    {"contact_email":"abc@123.com","tenant_name":"abc","context_data":{"organization":"abc"}}
-  ).then((response) => {return response.data})
+  const request = await axios.post(`${baseUrl}/multitenancy/reservations`, {
+    contact_email: "not.applicable@example.com",
+    tenant_name: "BC Wallet (afj-perf-test)",
+    context_data: { organization: "BC Wallet" },
+  }).then((response) => {return response.data})
   //{reservation_id, reservation_pwd}
 
   let checkin:any = {}
