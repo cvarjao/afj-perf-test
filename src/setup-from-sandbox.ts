@@ -30,7 +30,8 @@ const checkTransactions = async (baseUrl:string, token:string) => {
   console.dir(['transactions', transactions], {depth: 5})
   return transactions
 }
-const run = async () => {
+
+const getNewTenant = async () => {
   console.log('Requesting tenant')
   const baseUrl = 'https://traction-sandbox-tenant-proxy.apps.silver.devops.gov.bc.ca'
   //${baseUiUrl}/api/innkeeperReservation
@@ -135,18 +136,30 @@ const run = async () => {
     maxTransactionsChecks--
   }
 
+  return {
+    base_url: baseUrl,
+    serviceEndpoint: baseUrl.replace('-tenant-proxy', '-acapy'),
+    tenant_id: tenant.tenant_id,
+    api_key: tenant.api_key,
+    wallet_id: checkin.wallet_id,
+    wallet_key: checkin.wallet_key
+  }
+}
+const run = async () => {
+
+  const keys = ['schema_owner', 'issuer', 'verifier', 'holder']
   const config:any = {}
   if (fs.existsSync(path.resolve('./local.env.json'))){
      Object.assign(config, JSON.parse(fs.readFileSync(path.resolve('./local.env.json'), 'utf8')))
   }
 
-  config['_new'] = config['default2']??{}
-  config['_new']['base_url'] = baseUrl
-  config['_new']['serviceEndpoint'] = baseUrl.replace('-tenant-proxy', '-acapy')
-  config['_new']['tenant_id'] = tenant.tenant_id
-  config['_new']['api_key'] = tenant.api_key
-  config['_new']['wallet_id'] = checkin.wallet_id
-  config['_new']['wallet_key'] = checkin.wallet_key
+  for (const key of keys) {
+    const teant = await getNewTenant()
+    const conf = config[key]??{}
+    //const config = {config[key]??{}, ...teant}
+    config[key] = {...conf, ...teant}
+    await new Promise(resolve => setTimeout(resolve, 2000))
+  }
   fs.writeFileSync(path.resolve('./local.env.json'), JSON.stringify(config, undefined, 2), {encoding: 'utf8'})
 }
 run()

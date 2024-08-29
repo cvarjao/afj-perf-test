@@ -28,5 +28,7 @@ ngrok http "file://${PWD}/tmp"
 ```
 ## In terminal 2, run tests
 ```
-yarn jest --runInBand --detectOpenHandles --forceExit
+## For running using the mobile app. Open tmp/__qrcode.png to see the generated QR Codes
+export HOLDER_TYPE=manual
+yarn jest --runInBand --detectOpenHandles --forceExit src/basic.test.ts
 ```

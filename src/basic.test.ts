@@ -76,7 +76,7 @@ describe("Mandatory", () => {
   beforeEach(async () => {
     requests.length = 0
   })
-  test("connected/v1/M1", async () => {
+  test.skip("connected/v1/M1", async () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -94,7 +94,7 @@ describe("Mandatory", () => {
     logger.info('Message Received:', msgRcvd)
     //expect(requests).toMatchSnapshot();
   }, shortTimeout);
-  test("OOB/connected/messaging", async () => {
+  test.skip("OOB/connected/messaging", async () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -126,11 +126,11 @@ describe("Mandatory", () => {
     }
     //expect(requests).toMatchSnapshot();
   }, stepTimeout)
-  test.only("OOB/connected/issue", async () => {
+  test("OOB/connected/issue", async () => {
+    logger.info(`Executing ${expect.getState().currentTestName}`)
     const issuer = agentIssuer
     const holder = agentB
     const cred = new PersonCredential1(credDef)
-    const { logger } = issuer
     const remoteInvitation = await issuer.createOOBInvitationToConnect(INVITATION_TYPE.OOB_CONN_1_0)
     logger.info('remoteInvitation', remoteInvitation)
     logger.info(`waiting for holder to accept connection`)

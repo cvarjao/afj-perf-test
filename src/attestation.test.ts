@@ -10,7 +10,7 @@ const stepTimeout = 999999999
 const shortTimeout = (2 * 60) * 1000
 
 import { setGlobalDispatcher, Agent } from 'undici';
-import { AriesAgent, INVITATION_TYPE, ResponseCreateInvitationV1 } from "./Agent";
+import { AriesAgent, INVITATION_TYPE } from "./Agent";
 import { AgentManual } from "./AgentManual";
 setGlobalDispatcher(new Agent({ connect: { timeout: 20_000 } }));
 

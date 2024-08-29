@@ -16,6 +16,12 @@ export type InvitationPayloadMapping = {
     [INVITATION_TYPE.OOB_DIDX_1_1]: InvitationRecordV2
 }
 
+export type InvitationArgumentMapping = {
+    [INVITATION_TYPE.CONN_1_0]: Record<string, never>
+    [INVITATION_TYPE.OOB_CONN_1_0]: {goalCode: string}
+    [INVITATION_TYPE.OOB_DIDX_1_1]: {goalCode: string}
+}
+
 export type CreateInvitationResponse<T extends INVITATION_TYPE> = {type: T, payload:  InvitationPayloadMapping[T]}
 
 
@@ -35,7 +41,7 @@ export type ReceiveInvitationResponse = { outOfBandRecord?: OutOfBandRecord; con
 export interface AriesAgent {
     readonly logger: Logger
     sendBasicMessage(connection_id: string, content: string): Promise<any>
-    createInvitationToConnect<T extends INVITATION_TYPE>(invitationType: T): Promise<CreateInvitationResponse<T>>
+    createInvitationToConnect<T extends INVITATION_TYPE>(invitationType: T, args?: InvitationArgumentMapping[T]): Promise<CreateInvitationResponse<T>>
     receiveInvitation(invitation: ResponseCreateInvitation): Promise<ReceiveInvitationResponse>;
     startup(): Promise<void>;
     shutdown(): Promise<void>;
