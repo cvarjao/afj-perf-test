@@ -136,6 +136,7 @@ export const createAgent = async (
   //console.log(`Mediator URL:${config.mediatorInvitationUrl}`)
   //const wallet = agent.dependencyManager.resolve(InjectionSymbols.Wallet) as AskarWallet
   //console.dir(wallet)
+  /*
   try {
     fs.rmSync(path.join(homedir(), ".afj"), {
       recursive: true,
@@ -152,6 +153,7 @@ export const createAgent = async (
   } catch (error) {
     console.log(error);
   }
+  */
   console.dir(agentConfig.walletConfig);
   /*
   try {
@@ -301,6 +303,7 @@ export class AgentCredo implements AriesAgent {
     } = await this.agent.oob.receiveInvitation(invitation, {
       autoAcceptInvitation: true,
       autoAcceptConnection: true,
+      reuseConnection: true,
     });
     const invitationRequestsThreadIds =
       outOfBandRecord.getTags().invitationRequestsThreadIds;

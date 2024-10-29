@@ -31,12 +31,12 @@ describe("AppAttestation", () => {
   const _logger = pino({ level: 'trace', timestamp: pino.stdTimeFunctions.isoTime, }, loggerTransport);
   const logger = new PinoLogger(_logger, LogLevel.trace)
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const config = require("../local.env.json")["sovrin_testnet"];
+  const config = require("../local.env.json");
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ledgers = require("../ledgers.json");
-  const agentA = new AgentTraction(config, logger);
+  const agentA = new AgentTraction(config.issuer, logger);
   //const agentB: AriesAgent = new AgentManual(config, new ConsoleLogger(LogLevel.trace))
-  const agentB: AriesAgent = process.env.HOLDER_TYPE === 'manual' ? new AgentManual(config, logger) : new AgentCredo(config, ledgers, logger)
+  const agentB: AriesAgent = process.env.HOLDER_TYPE === 'manual' ? new AgentManual(config.holder, logger) : new AgentCredo(config.holder, ledgers, logger)
   //new PinoLogger(logger, LogLevel.trace));
   const schema = new SchemaBuilder().setName('app_attestation').setVersion('1.0').setSchemaId('NXp6XcGeCR2MviWuY51Dva:2:app_attestation:1.0')
   const credDef = new CredentialDefinitionBuilder()

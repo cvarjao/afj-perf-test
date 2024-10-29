@@ -94,7 +94,7 @@ describe("Mandatory", () => {
     logger.info('Message Received:', msgRcvd)
     //expect(requests).toMatchSnapshot();
   }, shortTimeout);
-  test.skip("OOB/connected/messaging", async () => {
+  test("OOB/connected/messaging", async () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)

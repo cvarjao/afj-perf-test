@@ -531,6 +531,11 @@ export class AgentTraction implements AriesAgent {
             "my_label":`Faber\`s 😇 - ${new Date().getTime()}`,
             "handshake_protocols": [invitationType.substring(6)],
         }
+        const params = {
+            "auto_accept": true,
+            "multi_use": false,
+            "create_unique_did": false,
+        }
         if (invitationType === INVITATION_TYPE.OOB_DIDX_1_1){
             Object.assign(payload, {
                 "protocol_version":"1.1",
@@ -538,11 +543,7 @@ export class AgentTraction implements AriesAgent {
             })
         }
         return http.post(`/out-of-band/create-invitation`,payload, {
-            params: {
-                "auto_accept": true,
-                "multi_use": false,
-                "create_unique_did": false,
-            },
+            params: params,
             headers:{
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${config.auth_token}`
@@ -581,6 +582,8 @@ export class AgentTraction implements AriesAgent {
             case INVITATION_TYPE.CONN_1_0:
                 return  this.__createInvitationToConnectConnV1() as Promise<CreateInvitationResponse<typeof invitationType>>
             case INVITATION_TYPE.OOB_CONN_1_0:
+                return  this.createOOBInvitationToConnect(invitationType) as Promise<CreateInvitationResponse<typeof invitationType>>
+            case INVITATION_TYPE.OOB_DIDX_1_1:
                 return  this.createOOBInvitationToConnect(invitationType) as Promise<CreateInvitationResponse<typeof invitationType>>
             default:
                 throw new Error("Invalid invitation type");
