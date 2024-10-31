@@ -82,7 +82,7 @@ describe("deep-links", () => {
     logger.info(`Executing ${expect.getState().currentTestName}`)
     const remoteInvitation = await withDeepLinkPage(await withRedirectUrl(await issuer.createInvitationToConnect(INVITATION_TYPE.OOB_DIDX_1_1)))
     logger.info(`waiting for holder to accept connection`)
-    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation, "Generic Camera App")
     logger.info(`waiting for issuer to accept connection`)
     const {connection_id} =  await issuer.waitForOOBConnectionReady(remoteInvitation.payload.invi_msg_id)
     logger.info(`${connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)

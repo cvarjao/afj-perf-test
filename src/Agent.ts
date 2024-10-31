@@ -42,7 +42,7 @@ export interface AriesAgent {
     readonly logger: Logger
     sendBasicMessage(connection_id: string, content: string): Promise<any>
     createInvitationToConnect<T extends INVITATION_TYPE>(invitationType: T, args?: InvitationArgumentMapping[T]): Promise<CreateInvitationResponse<T>>
-    receiveInvitation(invitation: ResponseCreateInvitation): Promise<ReceiveInvitationResponse>;
+    receiveInvitation(invitation: ResponseCreateInvitation, appName?:string): Promise<ReceiveInvitationResponse>;
     startup(): Promise<void>;
     shutdown(): Promise<void>;
     createSchema( builder: SchemaBuilder) : Promise<string |  undefined>

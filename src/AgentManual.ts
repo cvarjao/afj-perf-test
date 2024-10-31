@@ -46,7 +46,7 @@ export class AgentManual implements AriesAgent {
     async createInvitationToConnect<T extends INVITATION_TYPE>(_invitationType: T): Promise<CreateInvitationResponse<T>> {
         throw new Error("Method not implemented.");
     }
-    async receiveInvitation(ref: ResponseCreateInvitation): Promise<ReceiveInvitationResponse> {
+    async receiveInvitation(ref: ResponseCreateInvitation, appName:string = 'BC Wallet App'): Promise<ReceiveInvitationResponse> {
       const relativePath = './tmp/__qrcode.png'
       const QRCodePath = path.resolve(process.cwd() as string, relativePath)
       fs.mkdirSync(path.dirname(QRCodePath), { recursive: true })
@@ -57,7 +57,7 @@ export class AgentManual implements AriesAgent {
             ref.payload.invitation_url,
             {margin: 10}
       )
-      log(chalk.yellowBright(`> Scan QR Code image from ${relativePath}`))
+      log(chalk.yellowBright(`> Scan QR Code image using "${appName}" from ${relativePath}`))
       return {}
     }
     public async startup(){
