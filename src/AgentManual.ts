@@ -50,8 +50,8 @@ export class AgentManual implements AriesAgent {
       const relativePath = './tmp/__qrcode.png'
       const QRCodePath = path.resolve(process.cwd() as string, relativePath)
       fs.mkdirSync(path.dirname(QRCodePath), { recursive: true })
-      fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), ref.payload.invitation_url)
-      fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((ref.payload.invitation as any)))
+      //fs.writeFileSync(path.join(process.cwd(), 'invitation_url.txt'), ref.payload.invitation_url)
+      //fs.writeFileSync(path.join(process.cwd(), 'invitation.json'), JSON.stringify((ref.payload.invitation as any)))
       await QRCode.toFile(
             QRCodePath,
             ref.payload.invitation_url,

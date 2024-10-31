@@ -1,9 +1,9 @@
 import axios, {AxiosInstance} from 'axios';
 import { PersonCredential1 } from './mocks';
-import { BaseLogger, InvitationType, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
+import { BaseLogger, LogLevel, ProofExchangeRecord } from '@credo-ts/core';
 import { Logger } from 'pino';
 import { AgentTraction } from './AgentTraction';
-import { AriesAgent, INVITATION_TYPE, ResponseCreateInvitation, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from './Agent';
+import { AriesAgent, CreateInvitationResponse, INVITATION_TYPE, ResponseCreateInvitationV1, ResponseCreateInvitationV2 } from './Agent';
 import fs from 'node:fs';
 import path from 'node:path';
 import { log, dir} from "console"
@@ -921,7 +921,19 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
     logger.info('Verifier is waiting for proofs')
     await verifier.waitForPresentation(remoteInvitation3.payload.presentation_exchange_id as string)
   }
-  export const withRedirectUrl = async (remoteInvitation3: ResponseCreateInvitation): Promise<ResponseCreateInvitation> => {
+  export function base64URLencode(str: string) {
+    const base64Encoded = encodeURIComponent(str)
+    return base64Encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  export const withDeepLinkPage = async <T extends INVITATION_TYPE>(remoteInvitation3: CreateInvitationResponse<T>): Promise<CreateInvitationResponse<T>> => {
+    const invitationFile = `${remoteInvitation3.payload.invitation['@id']}.html`
+    fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), `<html><body><h1 style="font-size: 80pt"><a href="bcwallet://?_url=${Buffer.from(remoteInvitation3.payload.invitation_url).toString('base64url')}">click here</a></h1></body></html>`)
+    const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
+    remoteInvitation3.payload.invitation_url = `${publicUrl}/${invitationFile}`
+
+    return remoteInvitation3
+  }
+  export const withRedirectUrl = async <T extends INVITATION_TYPE>(remoteInvitation3: CreateInvitationResponse<T>): Promise<CreateInvitationResponse<T>> => {
     const invitationFile = `${remoteInvitation3.payload.invitation['@id']}.json`
     fs.writeFileSync(path.join(process.cwd(), `/tmp/${invitationFile}`), JSON.stringify(remoteInvitation3.payload.invitation, undefined, 2))
     const publicUrl = await axios.get('http://127.0.0.1:4040/api/tunnels').then((response)=>{return response.data.tunnels[0].public_url as string})
