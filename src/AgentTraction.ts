@@ -705,7 +705,8 @@ export class AgentTraction implements AriesAgent {
             }
         })
     }
-    async sendBasicMessage(connection_id: string, content: string): Promise<any>{
+    async sendBasicMessage(connection_id: string, content: string): Promise<any> {
+
         return await this.axios.post(`/connections/${connection_id}/send-message`,{
             content
         }, {
