@@ -54,7 +54,7 @@ import { IndyVdrPoolConfig } from "@credo-ts/indy-vdr";
 import { OutOfBandRecord } from "@credo-ts/core";
 import fs from "node:fs";
 import path from "node:path";
-import { homedir, tmpdir } from "node:os"
+import { homedir, tmpdir } from "node:os";
 
 const createLinkSecretIfRequired = async (agent: Agent) => {
   // If we don't have any link secrets yet, we will create a
@@ -222,7 +222,7 @@ export class AgentCredo implements AriesAgent {
     this.logger = logger;
   }
   sendBasicMessage(connection_id: string, content: string): Promise<any> {
-    return this.agent.basicMessages.sendMessage(connection_id, content)
+    return this.agent.basicMessages.sendMessage(connection_id, content);
   }
   sendOOBConnectionlessProofRequest(
     _builder: ProofRequestBuilder
@@ -241,28 +241,27 @@ export class AgentCredo implements AriesAgent {
     await this.agent.credentials.acceptOffer({ credentialRecordId: offer.id });
   }
   async acceptProof(proof: AcceptProofArgs): Promise<void> {
-    
-      while (true) {
-        const proofs = await this.agent.proofs.getAll();
-        //console.log(`Proofs ${proofs.length}`)
-        for (let index = 0; index < proofs.length; index++) {
-          const p = proofs[index];
-          //console.dir(p.toJSON());
-          if ("id" in proof) {
-            //console.log(`[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${p.threadId}, arg:${proof.id}`);
-            if (p.threadId === proof.id) {
-              await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
-              return;
-            }
-          } else if ("connection_id" in proof) {
-            if (p.connectionId ===  proof.connection_id){
-              await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
-              return;
-            }
+    while (true) {
+      const proofs = await this.agent.proofs.getAll();
+      //console.log(`Proofs ${proofs.length}`)
+      for (let index = 0; index < proofs.length; index++) {
+        const p = proofs[index];
+        //console.dir(p.toJSON());
+        if ("id" in proof) {
+          //console.log(`[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${p.threadId}, arg:${proof.id}`);
+          if (p.threadId === proof.id) {
+            await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
+            return;
+          }
+        } else if ("connection_id" in proof) {
+          if (p.connectionId === proof.connection_id) {
+            await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
+            return;
           }
         }
-        waitFor(1000);
       }
+      waitFor(1000);
+    }
   }
   async findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
     let cred!: CredentialExchangeRecord;
@@ -281,7 +280,9 @@ export class AgentCredo implements AriesAgent {
   createSchema(_builder: SchemaBuilder): Promise<string | undefined> {
     throw new Error("Method not implemented.");
   }
-  async createInvitationToConnect<T extends INVITATION_TYPE>(_invitationType: T): Promise<CreateInvitationResponse<T>> {
+  async createInvitationToConnect<T extends INVITATION_TYPE>(
+    _invitationType: T
+  ): Promise<CreateInvitationResponse<T>> {
     throw new Error("Method not implemented.");
   }
   async receiveInvitation(
