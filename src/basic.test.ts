@@ -17,6 +17,9 @@ import {
   withRedirectUrl,
 } from "./lib";
 import pino from "pino";
+import QRCode from "qrcode";
+import fs from "node:fs";
+import path from "node:path";
 
 const stepTimeout = 120_000;
 const shortTimeout = 40_000;
@@ -527,4 +530,64 @@ describe("Mandatory", () => {
     },
     shortTimeout
   );
+
+  describe.only("Proof Request", () => {
+    test.only("create credential person offer", async () => {
+
+    }, stepTimeout)
+    test.only(
+      "create valid proof request qr code",
+      async () => {
+        const verifier = agentVerifier;
+        const { logger } = verifier;
+        logger.info(`Executing ${expect.getState().currentTestName}`);
+        const proofRequest = new ProofRequestBuilder().addRequestedAttribute(
+          "studentInfo",
+          new RequestAttributeBuilder()
+            .setNames(["given_names", "family_name"])
+            //.addRestriction({"cred_def_id": credDef.getId()})
+            .addRestriction({
+              schema_name: schema.getName(),
+              schema_version: schema.getVersion(),
+              issuer_did: credDef.getId()?.split(":")[0],
+            })
+            .setNonRevoked(seconds_since_epoch(new Date()))
+        );
+
+        const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
+        const relativePath = `./tmp/proof/__valid_proof_request.png`;
+        const QRCodePath = path.resolve(process.cwd() as string, relativePath);
+        fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
+        await QRCode.toFile(QRCodePath, remoteInvitation3.payload.invitation_url, { margin: 10 });
+      },
+      stepTimeout
+    );
+    test.only(
+      "create invalid proof request qr code",
+      async () => {
+        const verifier = agentVerifier;
+        const { logger } = verifier;
+        logger.info(`Executing ${expect.getState().currentTestName}`);
+        const proofRequest = new ProofRequestBuilder().addRequestedAttribute(
+          "studentInfo",
+          new RequestAttributeBuilder()
+            .setNames(["given_names", "family_name", "not_a_real_attribute"])
+            //.addRestriction({"cred_def_id": credDef.getId()})
+            .addRestriction({
+              schema_name: schema.getName(),
+              schema_version: schema.getVersion(),
+              issuer_did: credDef.getId()?.split(":")[0],
+            })
+            .setNonRevoked(seconds_since_epoch(new Date()))
+        );
+
+        const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
+        const relativePath = `./tmp/proof__valid_proof_request.png`;
+        const QRCodePath = path.resolve(process.cwd() as string, relativePath);
+        fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
+        await QRCode.toFile(QRCodePath, remoteInvitation3.payload.invitation_url, { margin: 10 });
+      },
+      stepTimeout
+    );
+  });
 });
