@@ -68,7 +68,31 @@ export class AgentTraction implements AriesAgent {
             }
             return results[0] as ConnectionRef
         })
-    }    
+    }
+    async _waitForConnectionReadyByInvitationKey (invitation_key:string, counter: number): Promise<any> {
+        return await this.axios.get(`/connections`, {
+            params: {invitation_key},
+            headers:{
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.auth_token}`
+            }
+        })
+        .then((value)=>{
+            if (value.data.results.length > 0 ) {
+                const conn = value.data.results[0]
+                this.logger.info(`connection state: ${conn.state}`)
+                if (conn.state === 'active') {
+                    return conn
+                }
+
+            } 
+            return new Promise ((resolve) => {
+                setTimeout(() => {
+                    resolve(this._waitForConnectionReadyByInvitationKey(invitation_key, counter + 1))
+                }, 2000);
+            })
+        })
+    }
     async _waitForConnectionReady (connection_id:string, counter: number) {
         await this.axios.get(`/connections/${connection_id}`, {
             headers:{
@@ -676,10 +700,16 @@ export class AgentTraction implements AriesAgent {
             return credential_exchange_id
         })
     }
+    async waitFoConnectionReady <T extends INVITATION_TYPE>(invitation: CreateInvitationResponse<T>): Promise<{ connection_id: any; }> {
+        if (invitation.type === INVITATION_TYPE.OOB_DIDX_1_1) {
+            //todo: something
+        }
+        return {connection_id:''}
+      }
     async waitForOOBConnectionReady (invi_msg_id:string): Promise<ConnectionRef> {
-        const {connection_id} = await this._waitForOOBConnectionRecord(invi_msg_id, 0)
-        await this.waitForConnectionReady(connection_id)
-        return {connection_id}
+        const {invitation_key} = await this._waitForOOBConnectionRecord(invi_msg_id, 0)
+        const conn = await this._waitForConnectionReadyByInvitationKey(invitation_key as string, 0)
+        return {connection_id: conn.connection_id}
     }
     async waitForConnectionReady (connection_id:string) {
         this.logger.info(`Waiting for connection ${connection_id} to get stablished`)

@@ -7,7 +7,7 @@ import { CredentialDefinitionBuilder, issueCredential, PinoLogger, ProofRequestB
 import pino from "pino";
 
 const stepTimeout = 120_000
-const shortTimeout = 40_000
+const shortTimeout = 4_000_000
 import { dir as console_dir } from "console"
 import { setGlobalDispatcher, Agent} from 'undici';
 import { AriesAgent, INVITATION_TYPE } from "./Agent";
@@ -94,7 +94,7 @@ describe("Mandatory", () => {
     logger.info('Message Received:', msgRcvd)
     //expect(requests).toMatchSnapshot();
   }, shortTimeout);
-  test("OOB/connected/messaging", async () => {
+  test.only("OOB/connected/messaging", async () => {
     const issuer = agentIssuer
     const holder = agentB
     logger.info(`Executing ${expect.getState().currentTestName}`)
@@ -102,7 +102,7 @@ describe("Mandatory", () => {
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
-    const {connection_id} =  await issuer.waitForOOBConnectionReady(remoteInvitation.payload.invi_msg_id)
+    const {connection_id} =  await issuer.waitFoConnectionReady(remoteInvitation)
     logger.info(`${connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
     const msgSent: any = await issuer.sendBasicMessage(connection_id, 'Hello')
