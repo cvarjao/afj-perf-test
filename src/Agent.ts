@@ -29,7 +29,7 @@ export type ResponseCreateInvitationV1 = CreateInvitationResponse<INVITATION_TYP
 export type ResponseCreateInvitationV2 = CreateInvitationResponse<INVITATION_TYPE.OOB_CONN_1_0> | CreateInvitationResponse<INVITATION_TYPE.OOB_DIDX_1_1>
 export type ResponseCreateInvitation = ResponseCreateInvitationV1 | ResponseCreateInvitationV2
 
-export type ConnectionRef = {connection_id: string}
+export type ConnectionRef = {connection_id: string, invitation_key?:string}
 export type Invitation = {invitation_url: string} & ConnectionRef
 export type CredentialOfferRef = {id: string} & ConnectionRef
 

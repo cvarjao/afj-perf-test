@@ -99,91 +99,45 @@ describe("Mandatory", () => {
     //loggerTransport.end();
   }, stepTimeout);
   beforeEach(async () => {
-    requests.length = 0;
-  });
-  test.skip(
-    "connected/v1/M1",
-    async () => {
-      const issuer = agentIssuer;
-      const holder = agentB;
-      logger.info(`Executing ${expect.getState().currentTestName}`);
-      const remoteInvitation = await issuer.createInvitationToConnect(
-        INVITATION_TYPE.CONN_1_0
-      );
-      logger.info(`waiting for holder to accept connection`);
-      const agentBConnectionRef1 = await holder.receiveInvitation(
-        remoteInvitation
-      );
-      logger.info(`waiting for issuer to accept connection`);
-      await issuer.waitForConnectionReady(
-        remoteInvitation.payload.connection_id as string
-      );
-      logger.info(
-        `${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`
-      );
-      logger.info("agentBConnectionRef1", agentBConnectionRef1);
-      const msgSent: any = await issuer.sendBasicMessage(
-        remoteInvitation.payload.connection_id as string,
-        "Hello"
-      );
-      logger.info("Message Sent:", msgSent);
-      await holder.sendBasicMessage(
-        agentBConnectionRef1.connectionRecord?.connection_id as string,
-        "ok"
-      );
-      const msgRcvd = await issuer.waitForBasicMessage(
-        remoteInvitation.payload.connection_id as string,
-        Date.parse(msgSent.created_at as string),
-        ["k", "ok"]
-      );
-      logger.info("Message Received:", msgRcvd);
-      //expect(requests).toMatchSnapshot();
-    },
-    shortTimeout
-  );
-  test(
-    "OOB/connected/messaging",
-    async () => {
-      const issuer = agentIssuer;
-      const holder = agentB;
-      logger.info(`Executing ${expect.getState().currentTestName}`);
-      const remoteInvitation = await issuer.createInvitationToConnect(
-        INVITATION_TYPE.OOB_DIDX_1_1
-      );
-      logger.info(`waiting for holder to accept connection`);
-      const agentBConnectionRef1 = await holder.receiveInvitation(
-        remoteInvitation
-      );
-      logger.info(`waiting for issuer to accept connection`);
-      const { connection_id } = await issuer.waitForOOBConnectionReady(
-        remoteInvitation.payload.invi_msg_id
-      );
-      logger.info(
-        `${connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`
-      );
-      logger.info("agentBConnectionRef1", agentBConnectionRef1);
-      const msgSent: any = await issuer.sendBasicMessage(
-        connection_id,
-        "Hello"
-      );
-      logger.info("Message Sent:", msgSent);
-      await holder.sendBasicMessage(
-        agentBConnectionRef1.connectionRecord?.connection_id as string,
-        "ok"
-      );
-      const msgRcvd = await issuer.waitForBasicMessage(
-        connection_id,
-        Date.parse(msgSent.created_at as string),
-        ["k", "ok"]
-      );
-      logger.info("Message Received:", msgRcvd);
-    },
-    shortTimeout
-  );
-  test(
-    "setup",
-    async () => {
-      logger.info(`Executing ${expect.getState().currentTestName}`);
+    requests.length = 0
+  })
+  test.skip("connected/v1/M1", async () => {
+    const issuer = agentIssuer
+    const holder = agentB
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const remoteInvitation = await issuer.createInvitationToConnect(INVITATION_TYPE.CONN_1_0)
+    logger.info(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    logger.info(`waiting for issuer to accept connection`)
+    await issuer.waitForConnectionReady(remoteInvitation.payload.connection_id as string)
+    logger.info(`${remoteInvitation.payload.connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
+    const msgSent: any = await issuer.sendBasicMessage(remoteInvitation.payload.connection_id as string, 'Hello')
+    logger.info('Message Sent:', msgSent)
+    await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
+    const msgRcvd = await issuer.waitForBasicMessage(remoteInvitation.payload.connection_id as string, Date.parse(msgSent.created_at as string), ["k", "ok"])
+    logger.info('Message Received:', msgRcvd)
+    //expect(requests).toMatchSnapshot();
+  }, shortTimeout);
+  test("OOB/connected/messaging", async () => {
+    const issuer = agentIssuer
+    const holder = agentB
+    logger.info(`Executing ${expect.getState().currentTestName}`)
+    const remoteInvitation = await issuer.createInvitationToConnect(INVITATION_TYPE.OOB_DIDX_1_1)
+    logger.info(`waiting for holder to accept connection`)
+    const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
+    logger.info(`waiting for issuer to accept connection`)
+    const {connection_id} =  await issuer.waitFoConnectionReady(remoteInvitation)
+    logger.info(`${connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
+    logger.info('agentBConnectionRef1', agentBConnectionRef1)
+    const msgSent: any = await issuer.sendBasicMessage(connection_id, 'Hello')
+    logger.info('Message Sent:', msgSent)
+    await holder.sendBasicMessage(agentBConnectionRef1.connectionRecord?.connection_id as string, 'ok')
+    const msgRcvd = await issuer.waitForBasicMessage(connection_id, Date.parse(msgSent.created_at as string), ["k", "ok"])
+    logger.info('Message Received:', msgRcvd)
+  }, shortTimeout);
+  test("setup", async () => {
+    logger.info(`Executing ${expect.getState().currentTestName}`)
 
       try {
         await agentIssuer.clearAllRecords();

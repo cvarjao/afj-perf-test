@@ -63,7 +63,7 @@ describe("deep-links", () => {
       console_dir(error.response)
       return Promise.reject(error);
     })
-
+    await agentIssuer.clearAllRecords()
     await agentSchemaOwner.createSchema(schema);
     await agentIssuer.createSchemaCredDefinition(credDef);
   }, stepTimeout);
