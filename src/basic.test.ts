@@ -15,6 +15,7 @@ import {
   verifyCredentialB1,
   verifyCredentialB2,
   withRedirectUrl,
+  writeQRCode,
 } from "./lib";
 import pino from "pino";
 import QRCode from "qrcode";
@@ -575,11 +576,9 @@ describe("Mandatory", () => {
             .setNonRevoked(seconds_since_epoch(new Date()))
         );
 
-        const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
+        const remoteInvitation = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
         const relativePath = `./tmp/proof/__valid_proof_request.png`;
-        const QRCodePath = path.resolve(process.cwd() as string, relativePath);
-        fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
-        await QRCode.toFile(QRCodePath, remoteInvitation3.payload.invitation_url, { margin: 10 });
+        writeQRCode(relativePath, remoteInvitation.payload.invitation_url)
       },
       stepTimeout
     );
@@ -602,11 +601,9 @@ describe("Mandatory", () => {
             .setNonRevoked(seconds_since_epoch(new Date()))
         );
 
-        const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
+        const remoteInvitation = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
         const relativePath = `./tmp/proof/__invalid_proof_request.png`;
-        const QRCodePath = path.resolve(process.cwd() as string, relativePath);
-        fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
-        await QRCode.toFile(QRCodePath, remoteInvitation3.payload.invitation_url, { margin: 10 });
+        writeQRCode(relativePath, remoteInvitation.payload.invitation_url)
       },
       stepTimeout
     );
