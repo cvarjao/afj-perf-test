@@ -10,6 +10,7 @@ import { log, dir} from "console"
 import chalk from 'chalk';
 import { AgentCredo } from './AgentCredo';
 import { AnonCredsApi } from '@credo-ts/anoncreds';
+import QRCode from "qrcode";
 
 
 export enum OOB_CONNECTION_HANDSHAKE_PROTOCOL {
@@ -940,4 +941,10 @@ export const verifyCredentialA2 = async (verifier:AriesAgent, holder: AriesAgent
     remoteInvitation3.payload.invitation_url = `${publicUrl}/${invitationFile}`
 
     return remoteInvitation3
+  }
+
+  export const writeQRCode = async (filePath: string, invitationUrl: string) => {
+    const QRCodePath = path.resolve(process.cwd() as string, filePath);
+    fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
+    await QRCode.toFile(QRCodePath, invitationUrl, { margin: 10 });
   }

@@ -179,7 +179,7 @@ export const createAgent = async (
 
   agent.registerOutboundTransport(wsTransport);
   agent.registerOutboundTransport(httpTransport);
-  
+
   await agent.initialize();
 
   console.log("AFJ Agent initialized");
@@ -187,9 +187,9 @@ export const createAgent = async (
   if (config.mediatorInvitationUrl) {
     await agent.mediationRecipient.initiateMessagePickup(undefined, MediatorPickupStrategy.Implicit)
   }
-  
+
   createLinkSecretIfRequired(agent);
-  
+
   const indyVdrPoolService =
     agent.dependencyManager.resolve(IndyVdrPoolService);
   await Promise.all(
@@ -197,7 +197,7 @@ export const createAgent = async (
       (pool as unknown as any).pool.refresh()
     )
   );
-  
+
   return agent;
 };
 
@@ -219,19 +219,19 @@ export class AgentCredo implements AriesAgent {
       (
         | V1CredentialProtocol
         | V2CredentialProtocol<
-            (
-              | LegacyIndyCredentialFormatService
-              | AnonCredsCredentialFormatService
-            )[]
-          >
+          (
+            | LegacyIndyCredentialFormatService
+            | AnonCredsCredentialFormatService
+          )[]
+        >
       )[]
     >;
     proofs: ProofsModule<
       (
         | V1ProofProtocol
         | V2ProofProtocol<
-            (LegacyIndyProofFormatService | AnonCredsProofFormatService)[]
-          >
+          (LegacyIndyProofFormatService | AnonCredsProofFormatService)[]
+        >
       )[]
     >;
   }>;
@@ -257,28 +257,28 @@ export class AgentCredo implements AriesAgent {
     this.basicMessageReceivedSubscription?.unsubscribe()
     this.basicMessageReceivedSubscription = undefined
   }
-  
+
   private filterByType = <R extends BaseRecordAny>(recordClass: RecordClass<R>) => {
     return pipe(
       map((event: BaseEvent) => (event.payload as Record<string, R>).record),
       filter((record: R) => record.type === recordClass.type),
     )
   }
-  
+
   private recordsAddedByType = <R extends BaseRecordAny>(recordClass: RecordClass<R>) => {
     if (!this.agent) {
       throw new Error('Agent is required to check record type')
     }
-  
+
     if (!recordClass) {
       throw new Error("The recordClass can't be undefined")
     }
-  
+
     return this.agent?.events.observable<RecordSavedEvent<R>>(RepositoryEventTypes.RecordSaved).pipe(this.filterByType(recordClass))
   }
 
   sendBasicMessage(connection_id: string, content: string): Promise<any> {
-    return this.agent.basicMessages.sendMessage(connection_id, content)
+    return this.agent.basicMessages.sendMessage(connection_id, content);
   }
 
   sendOOBConnectionlessProofRequest(
@@ -302,28 +302,27 @@ export class AgentCredo implements AriesAgent {
   }
 
   async acceptProof(proof: AcceptProofArgs): Promise<void> {
-    
-      while (true) {
-        const proofs = await this.agent.proofs.getAll();
-        //console.log(`Proofs ${proofs.length}`)
-        for (let index = 0; index < proofs.length; index++) {
-          const p = proofs[index];
-          //console.dir(p.toJSON());
-          if ("id" in proof) {
-            //console.log(`[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${p.threadId}, arg:${proof.id}`);
-            if (p.threadId === proof.id) {
-              await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
-              return;
-            }
-          } else if ("connection_id" in proof) {
-            if (p.connectionId ===  proof.connection_id){
-              await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
-              return;
-            }
+    while (true) {
+      const proofs = await this.agent.proofs.getAll();
+      //console.log(`Proofs ${proofs.length}`)
+      for (let index = 0; index < proofs.length; index++) {
+        const p = proofs[index];
+        //console.dir(p.toJSON());
+        if ("id" in proof) {
+          //console.log(`[${index + 1}/${proofs.length}] -  id:${p.id}, threadId:${p.threadId}, arg:${proof.id}`);
+          if (p.threadId === proof.id) {
+            await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
+            return;
+          }
+        } else if ("connection_id" in proof) {
+          if (p.connectionId === proof.connection_id) {
+            await this.agent.proofs.acceptRequest({ proofRecordId: p.id });
+            return;
           }
         }
-        waitFor(1000);
       }
+      waitFor(1000);
+    }
   }
 
   async findCredentialOffer(connectionId: string): Promise<CredentialOfferRef> {
@@ -345,8 +344,9 @@ export class AgentCredo implements AriesAgent {
   createSchema(_builder: SchemaBuilder): Promise<string | undefined> {
     throw new Error("Method not implemented.");
   }
-
-  async createInvitationToConnect<T extends INVITATION_TYPE>(_invitationType: T): Promise<CreateInvitationResponse<T>> {
+  async createInvitationToConnect<T extends INVITATION_TYPE>(
+    _invitationType: T
+  ): Promise<CreateInvitationResponse<T>> {
     throw new Error("Method not implemented.");
   }
 
@@ -406,6 +406,6 @@ export class AgentCredo implements AriesAgent {
     await this.agent?.mediationRecipient?.stopMessagePickup();
     await this.agent?.shutdown();
 
-   this.basicMessageReceivedSubscription?.unsubscribe()
+    this.basicMessageReceivedSubscription?.unsubscribe()
   }
 }

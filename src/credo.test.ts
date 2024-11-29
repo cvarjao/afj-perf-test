@@ -1,8 +1,9 @@
 import { describe, expect, test } from "@jest/globals";
-import { LogLevel, WsOutboundTransport } from "@credo-ts/core";
+import { createAgent } from "./AgentCredo";
+import { LogLevel } from "@credo-ts/core";
 import { AgentTraction } from "./AgentTraction";
 import { AgentCredo } from "./AgentCredo";
-import {PinoLogger } from "./lib";
+import { PinoLogger } from "./lib";
 import pino from "pino";
 import { INVITATION_TYPE } from "./Agent";
 
@@ -37,20 +38,20 @@ describe("credo", () => {
 
   beforeAll(async () => {
     console.log('beforeAll')
-    holderAgent = new AgentCredo(config.holderX, ledgers, logger); 
+    holderAgent = new AgentCredo(config.holderX, ledgers, logger);
     issuerAgent = new AgentTraction(config.issuer, logger);
 
     await holderAgent.startup()
     await issuerAgent.startup()
   }, 50000);
-  
+
   afterAll(async () => {
     console.log('afterAll')
 
     await holderAgent.shutdown()
     await issuerAgent.shutdown()
   }, 20000);
-  
+
   test("something", async () => {
     expect(1 + 2).toBe(3);
   }, 20000);
@@ -59,12 +60,12 @@ describe("credo", () => {
     const messageCount = 2
     const remoteInvitation = await issuerAgent.createInvitationToConnect(INVITATION_TYPE.CONN_1_0)
     const issuerAgentConnectionRef = await holderAgent.receiveInvitation(remoteInvitation)
-    
+
     logger.info(`waiting for issuer to issuerAgent connection`)
     await issuerAgent.waitForConnectionReady(remoteInvitation.payload.connection_id as string)
 
     logger.info(`${remoteInvitation.payload.connection_id} connected to ${issuerAgentConnectionRef.connectionRecord?.connection_id}`)
-   
+
     // await holderAgent.shutdown()
 
     const messageReceivedPromise = new Promise<number>((resolve) => {
@@ -79,7 +80,7 @@ describe("credo", () => {
     });
 
     await holderAgent.agent.mediationRecipient.stopMessagePickup();
-    
+
     logger.info(`waiting for 20 seconds`)
     await delay(20000); // Pause for 20 seconds
 
@@ -91,12 +92,12 @@ describe("credo", () => {
     await issuerAgent.sendBasicMessage(remoteInvitation.payload.connection_id as string, 'Hello from issuer 1')
     await issuerAgent.sendBasicMessage(remoteInvitation.payload.connection_id as string, 'Hello from issuer 2')
 
-    await delay(5000); 
+    await delay(5000);
 
     await holderAgent.agent.mediationRecipient.initiateMessagePickup();
     // await holderAgent.agent.outboundTransports[0].start(holderAgent.agent)
     // await holderAgent.agent.mediationRecipient.initiateMessagePickup();
 
-    expect(await messageReceivedPromise).toBe(messageCount);  
+    expect(await messageReceivedPromise).toBe(messageCount);
   }, 35000);
 });
