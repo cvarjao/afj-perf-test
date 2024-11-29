@@ -32,3 +32,9 @@ ngrok http "file://${PWD}/tmp"
 export HOLDER_TYPE=manual
 yarn jest --runInBand --detectOpenHandles --forceExit src/basic.test.ts
 ```
+
+## Cleanup
+```
+rm -rf tmp/*.json(N) tmp/*.html(N) logs/*.ndjson(N)
+```
+note: `(N)` is [zsh null glob qualifier](https://zsh.sourceforge.io/Doc/Release/Expansion.html#Glob-Qualifiers)
