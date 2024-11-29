@@ -531,12 +531,33 @@ describe("Mandatory", () => {
     shortTimeout
   );
 
-  describe.only("Proof Request", () => {
-    test.only("create credential person offer", async () => {
+  describe("Proof Request", () => {
+    test("create credential person offer (manual)", async () => {
+      const issuer = agentIssuer;
+      // const holder = new AgentManual(config.holder, logger)
+      const cred = new PersonCredential1(credDef)
+      console.log(cred.getCredDef()?.getSchemaId())
+      const remoteInvitation = await issuer.createOOBInvitationToConnect(INVITATION_TYPE.OOB_CONN_1_0)
+      logger.info('remoteInvitation', remoteInvitation)
+      logger.info(`waiting for holder to accept connection`)
+
+      const relativePath = `./tmp/proof/__issue_credential_request.png`;
+      const QRCodePath = path.resolve(process.cwd() as string, relativePath);
+      fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
+      await QRCode.toFile(QRCodePath, remoteInvitation.payload.invitation_url, { margin: 10 });
+
+
+      logger.info(`waiting for issuer to accept connection`)
+      const { connection_id } = await issuer.waitForOOBConnectionReady(remoteInvitation.payload.invi_msg_id)
+      await issuer.sendBasicMessage(connection_id, 'You are connected to the test bench')
+      const credential_exchange_id = await issuer.sendCredential(cred, cred.getCredDef()?.getId() as string, connection_id)
+
+      await issuer.waitForOfferAccepted(credential_exchange_id as string)
+
 
     }, stepTimeout)
-    test.only(
-      "create valid proof request qr code",
+    test(
+      "create valid proof request qr code (manual)",
       async () => {
         const verifier = agentVerifier;
         const { logger } = verifier;
@@ -549,7 +570,7 @@ describe("Mandatory", () => {
             .addRestriction({
               schema_name: schema.getName(),
               schema_version: schema.getVersion(),
-              issuer_did: credDef.getId()?.split(":")[0],
+              issuer_did: schema.getSchemaId()?.split(":")[0],
             })
             .setNonRevoked(seconds_since_epoch(new Date()))
         );
@@ -562,8 +583,8 @@ describe("Mandatory", () => {
       },
       stepTimeout
     );
-    test.only(
-      "create invalid proof request qr code",
+    test(
+      "create invalid proof request qr code (manual)",
       async () => {
         const verifier = agentVerifier;
         const { logger } = verifier;
@@ -571,18 +592,18 @@ describe("Mandatory", () => {
         const proofRequest = new ProofRequestBuilder().addRequestedAttribute(
           "studentInfo",
           new RequestAttributeBuilder()
-            .setNames(["given_names", "family_name", "not_a_real_attribute"])
+            .setNames(["given_names", "no_good"])
             //.addRestriction({"cred_def_id": credDef.getId()})
             .addRestriction({
               schema_name: schema.getName(),
               schema_version: schema.getVersion(),
-              issuer_did: credDef.getId()?.split(":")[0],
+              issuer_did: schema.getSchemaId()?.split(":")[0],
             })
             .setNonRevoked(seconds_since_epoch(new Date()))
         );
 
         const remoteInvitation3 = await verifier.sendOOBConnectionlessProofRequestV2(proofRequest);
-        const relativePath = `./tmp/proof__valid_proof_request.png`;
+        const relativePath = `./tmp/proof/__invalid_proof_request.png`;
         const QRCodePath = path.resolve(process.cwd() as string, relativePath);
         fs.mkdirSync(path.dirname(QRCodePath), { recursive: true });
         await QRCode.toFile(QRCodePath, remoteInvitation3.payload.invitation_url, { margin: 10 });
