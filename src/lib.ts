@@ -267,6 +267,16 @@ export class IssueCredentialPreviewV1 {
     }
 }
 
+export async function shortenUrl(longUrl:string) {
+    const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+    if (response.ok) {
+        const shortUrl = await response.text();
+        return shortUrl;
+    } else {
+        throw new Error('Failed to shorten URL');
+    }
+}
+
 export class ProofRequestBuilder {
     private name: string = "proof-request"
     private version: string = "1.0"

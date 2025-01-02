@@ -14,6 +14,7 @@ import {
   verifyCredentialA2,
   verifyCredentialB1,
   verifyCredentialB2,
+  waitFor,
   withRedirectUrl,
   writeQRCode,
 } from "./lib";
@@ -127,6 +128,7 @@ describe("Mandatory", () => {
     logger.info(`waiting for holder to accept connection`)
     const agentBConnectionRef1 = await holder.receiveInvitation(remoteInvitation)
     logger.info(`waiting for issuer to accept connection`)
+    //@ts-ignore
     const {connection_id} =  await issuer.waitFoConnectionReady(remoteInvitation)
     logger.info(`${connection_id} connected to ${agentBConnectionRef1.connectionRecord?.connection_id}`)
     logger.info('agentBConnectionRef1', agentBConnectionRef1)
@@ -312,6 +314,63 @@ describe("Mandatory", () => {
       //expect(requests).toMatchSnapshot();
     },
     shortTimeout
+  );
+  test(
+    "connectionless/present-proof-2.0/encoded-payload/oob_connectionless",
+    async () => {
+      const verifier = agentVerifier;
+      const holder = agentB;
+      const issuer = agentIssuer;
+      const cred = new PersonCredential1(credDef);
+
+      const { logger } = verifier;
+      logger.info(`Executing ${expect.getState().currentTestName}`);
+      const proofRequest = new ProofRequestBuilder().addRequestedAttribute(
+        "studentInfo",
+        new RequestAttributeBuilder()
+          .setNames(["given_names", "family_name"])
+          //.addRestriction({"cred_def_id": credDef.getId()})
+          .addRestriction({
+            schema_name: schema.getName(),
+            schema_version: schema.getVersion(),
+            issuer_did: credDef.getId()?.split(":")[0],
+          })
+          .setNonRevoked(seconds_since_epoch(new Date()))
+      );
+      const remoteInvitation2 = await verifier.sendConnectionlessProofRequestV2(
+        proofRequest
+      );
+      const agentBConnectionRef2 = await holder.receiveInvitation(
+        remoteInvitation2
+      );
+      //console.dir(['agentBConnectionRef', agentBConnectionRef2])
+      if (agentBConnectionRef2.invitationRequestsThreadIds) {
+        for (const proofId of agentBConnectionRef2.invitationRequestsThreadIds) {
+          await holder.acceptProof({ id: proofId });
+        }
+      }
+      logger.info("remoteInvitation2", remoteInvitation2);
+      await verifier.waitForPresentationV2(
+        remoteInvitation2.payload.presentation_exchange_id as string
+      );
+
+      let CredentialOfferInvitation:any = await issuer.sendOOBConnectionlessCredentialOfferV2(cred,credDef)
+
+      const agentBConnectionRef1:any = await holder.receiveInvitation(
+        CredentialOfferInvitation
+      );
+
+      logger.info("Holder is accepting credentials");
+      await waitFor(60000);
+
+      logger.info(
+        `Issuer is waiting for Offer: ${CredentialOfferInvitation.payload.credential_exchange_id}`
+      );
+      await issuer.waitForOfferAcceptedV2(
+        CredentialOfferInvitation.payload.credential_exchange_id as string
+      );
+    },
+    90_000
   );
   test(
     "connectionless/present-proof-2.0/url-redirect",
